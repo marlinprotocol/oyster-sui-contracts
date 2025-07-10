@@ -2,12 +2,12 @@
 
 [move]
 version = 3
-manifest_digest = "D42FE01A0D8367EF910215883A31A10A1C1DE1CE245C32828D916123CE7E0272"
+manifest_digest = "A8747EFB951CE6DC6E0A2800BDE4FB998C082F1CD251248205CAC525DD49B56B"
 deps_digest = "060AD7E57DFB13104F21BE5F5C3759D03F0553FC3229247D9A7A6B45F50D03A3"
 dependencies = [
   { id = "Sui", name = "Sui" },
   { id = "oyster_credits", name = "oyster_credits" },
-  { id = "usdc", name = "usdc", addr_subst = { "usdc_usdc" = "usdc" } },
+  { id = "usdc", name = "usdc" },
 ]
 
 [[move.package]]
@@ -28,37 +28,26 @@ source = { local = "../oyster_credits" }
 
 dependencies = [
   { id = "Sui", name = "Sui" },
-  { id = "usdc", name = "usdc", addr_subst = { "usdc_usdc" = "usdc" } },
-]
-
-[[move.package]]
-id = "stablecoin"
-source = { git = "https://github.com/circlefin/stablecoin-sui.git", rev = "master", subdir = "packages/stablecoin" }
-
-dependencies = [
-  { id = "Sui", name = "Sui" },
-  { id = "sui_extensions", name = "sui_extensions" },
-]
-
-[[move.package]]
-id = "sui_extensions"
-source = { git = "https://github.com/circlefin/stablecoin-sui.git", rev = "master", subdir = "packages/sui_extensions" }
-
-dependencies = [
-  { id = "Sui", name = "Sui" },
+  { id = "usdc", name = "usdc" },
 ]
 
 [[move.package]]
 id = "usdc"
-source = { git = "https://github.com/circlefin/stablecoin-sui.git", rev = "master", subdir = "packages/usdc" }
+source = { local = "../usdc" }
 
 dependencies = [
   { id = "Sui", name = "Sui" },
-  { id = "stablecoin", name = "stablecoin" },
-  { id = "sui_extensions", name = "sui_extensions" },
 ]
 
 [move.toolchain-version]
 compiler-version = "1.50.0"
 edition = "2024.beta"
 flavor = "sui"
+
+[env]
+
+[env.localnet]
+chain-id = "f3b47815"
+original-published-id = "0x591bea05bb1bf3e1c67fafa9fafc5c67eef3e989d3f0519882c30392cf7502f7"
+latest-published-id = "0x591bea05bb1bf3e1c67fafa9fafc5c67eef3e989d3f0519882c30392cf7502f7"
+published-version = "1"

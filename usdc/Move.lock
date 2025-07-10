@@ -2,11 +2,10 @@
 
 [move]
 version = 3
-manifest_digest = "C15A2E80F0019A0462B55A2DC7CC6174A886E7383C9E151964C4887E63AB3EF5"
-deps_digest = "3C4103934B1E040BB6B23F1D610B4EF9F2F1166A50A104EADCF77467C004C600"
+manifest_digest = "B17B2A4699E5C6A0533EE2E3655A7722312DE2406840CF6947DB1DFAB3979566"
+deps_digest = "F8BBB0CCB2491CA29A3DF03D6F92277A4F3574266507ACD77214D37ECA3F3082"
 dependencies = [
   { id = "Sui", name = "Sui" },
-  { id = "usdc", name = "usdc" },
 ]
 
 [[move.package]]
@@ -21,14 +20,6 @@ dependencies = [
   { id = "MoveStdlib", name = "MoveStdlib" },
 ]
 
-[[move.package]]
-id = "usdc"
-source = { local = "../usdc" }
-
-dependencies = [
-  { id = "Sui", name = "Sui" },
-]
-
 [move.toolchain-version]
 compiler-version = "1.50.0"
 edition = "2024.beta"
@@ -38,6 +29,6 @@ flavor = "sui"
 
 [env.localnet]
 chain-id = "f3b47815"
-original-published-id = "0x13c6748cd7a70ea4da72e35be4017c572b1bb2d2c03c2b2c350e5e13956528cd"
-latest-published-id = "0x13c6748cd7a70ea4da72e35be4017c572b1bb2d2c03c2b2c350e5e13956528cd"
+original-published-id = "0xf957d907ebb6c264d1f9145627a0ffdac92d0fb882c027995737a07a40341889"
+latest-published-id = "0xf957d907ebb6c264d1f9145627a0ffdac92d0fb882c027995737a07a40341889"
 published-version = "1"
