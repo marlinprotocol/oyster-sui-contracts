@@ -338,7 +338,7 @@ module oyster_credits::credit_token {
 
     // --- Oyster Market: Redeem CREDIT for USDC ---
     // TODO: remove usdc_amount parameter if it is always equal to credit_to_burn value.
-    public entry fun redeem_and_burn<USDC>(
+    public fun redeem_and_burn<USDC>(
         config: &mut CreditConfig<USDC>,
         credit_to_burn: Coin<CREDIT_TOKEN>, // Redeemer provides their CREDIT coins
         usdc_recipient: address,     // Address to send USDC to

@@ -306,15 +306,15 @@ module oyster_market::market {
         amount_used <= (settle_amount as u128)
     }
 
-    public entry fun job_open(
+    public fun job_open(
         config: &MarketConfig,
         marketplace: &mut Marketplace,
         credit_config: &mut CreditConfig<USDC>,
         metadata: String,
         provider: address,
         rate: u64, // rate per millisecond
-        initial_payment: Coin<USDC>,
-        initial_credit: Coin<CREDIT_TOKEN>,
+        initial_payment: Option<Coin<USDC>>,
+        initial_credit: Option<Coin<CREDIT_TOKEN>>,
         clock: &Clock,
         ctx: &mut TxContext
     ) {
@@ -322,8 +322,16 @@ module oyster_market::market {
         let mut payment_balance = balance::zero<USDC>();
         let mut credit_balance = balance::zero<CREDIT_TOKEN>();
 
-        balance::join(&mut payment_balance, coin::into_balance(initial_payment));
-        balance::join(&mut credit_balance, coin::into_balance(initial_credit));
+        if (option::is_some(&initial_payment)) {
+            balance::join(&mut payment_balance, coin::into_balance(option::destroy_some(initial_payment)));
+        } else {
+            option::destroy_none(initial_payment);
+        };
+        if (option::is_some(&initial_credit)) {
+            balance::join(&mut credit_balance, coin::into_balance(option::destroy_some(initial_credit)));
+        } else {
+            option::destroy_none(initial_credit);
+        };
 
         let job = Job {
             id: object::new(ctx),
@@ -410,22 +418,32 @@ module oyster_market::market {
         object::delete(id);
     }
 
-    public entry fun job_deposit(
+    public fun job_deposit(
         marketplace: &mut Marketplace,
         job_id: u128,
-        payment_to_deposit: Coin<USDC>,
-        credit_to_deposit: Coin<CREDIT_TOKEN>,
+        payment_to_deposit: Option<Coin<USDC>>,
+        credit_to_deposit: Option<Coin<CREDIT_TOKEN>>,
         ctx: &mut TxContext,
     ) {
         let job = table::borrow_mut(&mut marketplace.jobs, job_id);
         let sender = tx_context::sender(ctx);
+        let mut payment_amount = 0;
+        let mut credit_amount = 0;
 
-        let payment_amount = coin::value(&payment_to_deposit);
-        balance::join(&mut job.payment_token_balance, coin::into_balance(payment_to_deposit));
-
-        let credit_amount = coin::value(&credit_to_deposit);
-        balance::join(&mut job.credit_token_balance, coin::into_balance(credit_to_deposit));
-
+        if (option::is_some(&payment_to_deposit)) {
+            let coin = option::destroy_some(payment_to_deposit);
+            payment_amount = coin::value(&coin);
+            balance::join(&mut job.payment_token_balance, coin::into_balance(coin));
+        } else {
+            option::destroy_none(payment_to_deposit);
+        };
+        if (option::is_some(&credit_to_deposit)) {
+            let coin = option::destroy_some(credit_to_deposit);
+            credit_amount = coin::value(&coin);
+            balance::join(&mut job.credit_token_balance, coin::into_balance(coin));
+        } else {
+            option::destroy_none(credit_to_deposit);
+        };
         assert!(payment_amount > 0 || credit_amount > 0, E_INVALID_AMOUNT);
         event::emit(JobDeposited { job_id, from: sender, payment_token_amount: payment_amount, credit_token_amount: credit_amount });
     }

@@ -211,12 +211,15 @@ module oyster_market::oyster_market_tests {
 
         scenario.next_tx(admin);
 
-        // Create Coin<CREDIT_TOKEN> for initial_credit
-        let initial_credit = coin::zero<CREDIT_TOKEN>(scenario.ctx());
+        // Create Option<Coin<USDC>> for initial_payment and Option<Coin<CREDIT_TOKEN>> for initial_credit
+        let initial_payment: option::Option<Coin<USDC>> = option::some(usdc_coin);
+        let initial_credit: option::Option<Coin<CREDIT_TOKEN>> = option::none();
 
         // Get clock and ctx from scenario
         let clock = clock::create_for_testing(scenario.ctx());
         let ctx = scenario.ctx();
+
+        print(&b"Job Opening...".to_string());
 
         market::job_open(
             &config,
@@ -225,7 +228,7 @@ module oyster_market::oyster_market_tests {
             metadata,
             provider_addr,
             rate,
-            usdc_coin,
+            initial_payment,
             initial_credit,
             &clock,
             ctx
@@ -304,12 +307,15 @@ module oyster_market::oyster_market_tests {
 
         let credit_coin = scenario.take_from_sender<Coin<CREDIT_TOKEN>>();
 
-        // Create Coin<USDC> for initial_payment
-        let initial_payment = coin::zero<USDC>(scenario.ctx());
+        // Create Option<Coin<USDC>> for initial_payment and Option<Coin<CREDIT_TOKEN>> for initial_credit
+        let initial_payment: option::Option<Coin<USDC>> = option::none();
+        let initial_credit: option::Option<Coin<CREDIT_TOKEN>> = option::some(credit_coin);
 
         // Get clock and ctx from scenario
         let clock = clock::create_for_testing(scenario.ctx());
         let ctx = scenario.ctx();
+
+        print(&b"Job Opening...".to_string());
 
         market::job_open(
             &config,
@@ -319,7 +325,7 @@ module oyster_market::oyster_market_tests {
             provider_addr,
             rate,
             initial_payment,
-            credit_coin,
+            initial_credit,
             &clock,
             ctx
         );
