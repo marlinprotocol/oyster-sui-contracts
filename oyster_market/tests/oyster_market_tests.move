@@ -712,10 +712,13 @@ module oyster_market::oyster_market_tests {
         let credit_to_deposit: option::Option<Coin<CREDIT_TOKEN>> = option::some(credit_coin);
 
         market::job_deposit(
+            &config,
             &mut marketplace,
+            &mut credit_config,
             job_id,
             payment_to_deposit,
             credit_to_deposit,
+            &clock,
             scenario.ctx()
         );
 

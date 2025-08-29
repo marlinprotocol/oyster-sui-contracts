@@ -122,9 +122,9 @@ module oyster_market::market {
     }
     public struct JobDeposited has copy, drop {
         job_id: u128,
+        token_name: String, // "CREDIT" or "USDC"
         from: address,
-        payment_token_amount: u64,
-        credit_token_amount: u64,
+        amount: u64,
     }
     public struct JobSettled has copy, drop {
         job_id: u128,
@@ -132,6 +132,12 @@ module oyster_market::market {
         payment_token_amount: u64,
         credit_token_amount: u64,
         settled_until_ms: u64,
+    }
+    public struct JobSettlementWithdrawn has copy, drop {
+        job_id: u128,
+        token_name: String,
+        provider: address,
+        amount: u64,
     }
     public struct JobRateRevised has copy, drop {
         job_id: u128,
@@ -291,6 +297,12 @@ module oyster_market::market {
                 credit_to_settle,
                 ctx
             );
+            event::emit(JobSettlementWithdrawn {
+                job_id: job.job_id,
+                token_name: string::utf8(b"CREDIT"),
+                provider: job.provider,
+                amount: credit_to_settle
+            });
         };
 
         if (payment_to_settle > 0) {
@@ -299,6 +311,12 @@ module oyster_market::market {
                 ctx
             );
             transfer::public_transfer(payment_tokens, job.provider);
+            event::emit(JobSettlementWithdrawn {
+                job_id: job.job_id,
+                token_name: string::utf8(b"USDC"),
+                provider: job.provider,
+                amount: payment_to_settle
+            });
         };
 
         job.last_settled_ms = settle_until_ms;
@@ -326,25 +344,9 @@ module oyster_market::market {
         ctx: &mut TxContext
     ) {
         let owner = tx_context::sender(ctx);
-        let mut payment_balance = balance::zero<USDC>();
-        let mut credit_balance = balance::zero<CREDIT_TOKEN>();
-
-        if (option::is_some(&initial_payment)) {
-            balance::join(
-                &mut payment_balance,
-                coin::into_balance(option::destroy_some(initial_payment))
-            );
-        } else {
-            option::destroy_none(initial_payment);
-        };
-        if (option::is_some(&initial_credit)) {
-            balance::join(
-                &mut credit_balance,
-                coin::into_balance(option::destroy_some(initial_credit))
-            );
-        } else {
-            option::destroy_none(initial_credit);
-        };
+        let payment_balance = balance::zero<USDC>();
+        let credit_balance = balance::zero<CREDIT_TOKEN>();
+        let job_id = marketplace.job_index;
 
         let job = Job {
             id: object::new(ctx),
@@ -358,13 +360,27 @@ module oyster_market::market {
             credit_token_balance: credit_balance,
         };
 
-        let job_id = marketplace.job_index;
         marketplace.job_index = job_id + 1;
 
         event::emit(JobOpened { job_id, owner, provider, metadata: job.metadata });
         table::add(&mut marketplace.jobs, job_id, job);
 
-        revise_job_rate(config, marketplace, credit_config, job_id, rate, clock, ctx)
+        deposit(
+            marketplace.jobs.borrow_mut(job_id),
+            owner,
+            initial_payment,
+            initial_credit
+        );
+
+        revise_job_rate(
+            config,
+            marketplace,
+            credit_config,
+            job_id,
+            rate,
+            clock,
+            ctx
+        );
     }
     
     public entry fun job_settle(
@@ -399,27 +415,10 @@ module oyster_market::market {
         let mut closed_job = table::remove(&mut marketplace.jobs, job_id);
         let owner = closed_job.owner;
 
-        // Refund remaining balances
-        let remaining_payment_balance = balance::value(&closed_job.payment_token_balance);
-        if (remaining_payment_balance > 0) {
-            transfer::public_transfer(
-                coin::from_balance(
-                    balance::split(&mut closed_job.payment_token_balance, remaining_payment_balance),
-                    ctx
-                ),
-                owner
-            );
-        };
-
-        let remaining_credit_balance = balance::value(&closed_job.credit_token_balance);
-        if (remaining_credit_balance > 0) {
-            transfer::public_transfer(
-                coin::from_balance(
-                    balance::split(&mut closed_job.credit_token_balance, remaining_credit_balance),
-                    ctx
-                ),
-                owner
-            );
+        // Refund remaining balances to the job owner
+        let remaining_amount = balance::value(&closed_job.payment_token_balance) + balance::value(&closed_job.credit_token_balance);
+        if(remaining_amount > 0) {
+            withdraw(&mut closed_job, owner, remaining_amount, ctx);
         };
 
         event::emit(JobClosed { job_id });
@@ -439,15 +438,12 @@ module oyster_market::market {
         object::delete(id);
     }
 
-    public fun job_deposit(
-        marketplace: &mut Marketplace,
-        job_id: u128,
+    fun deposit(
+        job: &mut Job,
+        from: address,
         payment_to_deposit: Option<Coin<USDC>>,
         credit_to_deposit: Option<Coin<CREDIT_TOKEN>>,
-        ctx: &mut TxContext,
     ) {
-        let job = table::borrow_mut(&mut marketplace.jobs, job_id);
-        let sender = tx_context::sender(ctx);
         let mut payment_amount = 0;
         let mut credit_amount = 0;
 
@@ -455,23 +451,61 @@ module oyster_market::market {
             let coin = option::destroy_some(payment_to_deposit);
             payment_amount = coin::value(&coin);
             balance::join(&mut job.payment_token_balance, coin::into_balance(coin));
+
+            if (payment_amount > 0) {
+                event::emit(JobDeposited {
+                    job_id: job.job_id,
+                    token_name: string::utf8(b"USDC"),
+                    from,
+                    amount: payment_amount
+                });
+            };
         } else {
             option::destroy_none(payment_to_deposit);
         };
+
         if (option::is_some(&credit_to_deposit)) {
             let coin = option::destroy_some(credit_to_deposit);
             credit_amount = coin::value(&coin);
             balance::join(&mut job.credit_token_balance, coin::into_balance(coin));
+
+            if (credit_amount > 0) {
+                event::emit(JobDeposited {
+                    job_id: job.job_id,
+                    token_name: string::utf8(b"CREDIT"),
+                    from,
+                    amount: credit_amount
+                });
+            };
         } else {
             option::destroy_none(credit_to_deposit);
         };
+
         assert!(payment_amount > 0 || credit_amount > 0, E_INVALID_AMOUNT);
-        event::emit(JobDeposited {
-            job_id,
-            from: sender,
-            payment_token_amount: payment_amount,
-            credit_token_amount: credit_amount
-        });
+    }
+
+    public fun job_deposit(
+        config: &MarketConfig,
+        marketplace: &mut Marketplace,
+        credit_config: &mut CreditConfig<USDC>,
+        job_id: u128,
+        payment_to_deposit: Option<Coin<USDC>>,
+        credit_to_deposit: Option<Coin<CREDIT_TOKEN>>,
+        clock: &Clock,
+        ctx: &mut TxContext,
+    ) {
+        let job = table::borrow_mut(&mut marketplace.jobs, job_id);
+
+        // Settle before deposit to ensure balances are up-to-date
+        let settle_until = clock::timestamp_ms(clock) + config.notice_period;
+        let rate = job.rate;
+        assert!(
+            settle_job(job, credit_config, settle_until, rate, ctx),
+            E_INSUFFICIENT_FUNDS_FOR_SETTLEMENT
+        );
+
+        let sender = tx_context::sender(ctx);
+        deposit(job, sender, payment_to_deposit, credit_to_deposit);
     }
 
     public entry fun job_withdraw(
@@ -485,7 +519,8 @@ module oyster_market::market {
     ) {
         assert!(amount > 0, E_INVALID_AMOUNT);
         let job = table::borrow_mut(&mut marketplace.jobs, job_id);
-        assert!(job.owner == tx_context::sender(ctx), E_ONLY_JOB_OWNER);
+        let sender = tx_context::sender(ctx);
+        assert!(job.owner == sender, E_ONLY_JOB_OWNER);
         
         // Settle before withdrawal to ensure balances are up-to-date
         let settle_until = clock::timestamp_ms(clock) + config.notice_period;
@@ -494,11 +529,20 @@ module oyster_market::market {
             settle_job(job, credit_config, settle_until, rate, ctx),
             E_INSUFFICIENT_FUNDS_FOR_SETTLEMENT
         );
-        
+
+        withdraw(job, sender, amount, ctx);
+    }
+
+    fun withdraw(
+        job: &mut Job,
+        to: address,
+        amount: u64,
+        ctx: &mut TxContext
+    ) {
         let total_balance = balance::value(&job.payment_token_balance) + balance::value(&job.credit_token_balance);
         assert!(total_balance >= amount, E_WITHDRAWAL_EXCEEDS_JOB_BALANCE);
 
-        // Prioritize withdrawing payment_token first, then credit_token (matches Solidity `_withdraw`)
+        // Prioritize withdrawing payment_token first, then credit_token
         let payment_balance = balance::value(&job.payment_token_balance);
         let (payment_to_withdraw, credit_to_withdraw) = if (amount > payment_balance) {
             (payment_balance, amount - payment_balance)
@@ -511,14 +555,26 @@ module oyster_market::market {
                 balance::split(&mut job.payment_token_balance, payment_to_withdraw),
                 ctx
             );
-            transfer::public_transfer(payment_coin, job.owner);
+            transfer::public_transfer(payment_coin, to);
+            event::emit(JobWithdrawn {
+                job_id: job.job_id,
+                token_name: string::utf8(b"USDC"), // Identifying the token type
+                to,
+                amount: payment_to_withdraw,
+            });
         };
         if (credit_to_withdraw > 0) {
             let credit_coin = coin::from_balance(
                 balance::split(&mut job.credit_token_balance, credit_to_withdraw),
                 ctx
             );
-            transfer::public_transfer(credit_coin, job.owner);
+            transfer::public_transfer(credit_coin, to);
+            event::emit(JobWithdrawn {
+                job_id: job.job_id,
+                token_name: string::utf8(b"CREDIT"), // Identifying the token type
+                to,
+                amount: credit_to_withdraw,
+            });
         };
     }
     
@@ -678,7 +734,6 @@ module oyster_market::market {
         };
     }
 
-    // --- Internal Math Helpers ---
     fun calculate_token_split(total_amount: u64, credit_balance: u64): (u64, u64) {
         if (total_amount > credit_balance) {
             (credit_balance, total_amount - credit_balance) // (creditAmount, tokenAmount)
