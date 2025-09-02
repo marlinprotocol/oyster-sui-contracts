@@ -128,9 +128,6 @@ module oyster_market::market {
     }
     public struct JobSettled has copy, drop {
         job_id: u128,
-        provider: address,
-        payment_token_amount: u64,
-        credit_token_amount: u64,
         settled_until_ms: u64,
     }
     public struct JobSettlementWithdrawn has copy, drop {
@@ -322,9 +319,6 @@ module oyster_market::market {
         job.last_settled_ms = settle_until_ms;
         event::emit(JobSettled { 
             job_id: job.job_id, 
-            provider: job.provider, 
-            payment_token_amount: payment_to_settle, 
-            credit_token_amount: credit_to_settle,
             settled_until_ms: settle_until_ms
         });
         
