@@ -10,11 +10,11 @@ edition = "2024.beta" # edition = "legacy" to use legacy (pre-2024) Move
 # Revision can be a branch, a tag, and a commit hash.
 # MyRemotePackage = { git = "https://some.remote/host.git", subdir = "remote/path", rev = "main" }
 Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "framework/testnet", override = true }
+# Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "testnet-v1.52.2", override = true }
 # usdc = { git = "https://github.com/circlefin/stablecoin-sui.git", subdir = "packages/usdc", rev = "master", addr_subst = {"usdc_usdc" = "usdc"} }
 
 # For local dependencies use `local = path`. Path is relative to the package root
 # Local = { local = "../path/to" }
-oyster_credits = {local = "../oyster_credits"}
 usdc = {local = "../usdc"}
 
 # To resolve a version conflict and force a specific version for dependency
@@ -23,12 +23,10 @@ usdc = {local = "../usdc"}
 
 [addresses]
 # oyster_market = "0x0"
-# oyster_credits = "0x0"
 # usdc = "0x0"
 # Localnet
-oyster_market = "0x591bea05bb1bf3e1c67fafa9fafc5c67eef3e989d3f0519882c30392cf7502f7"
-usdc = "0xf957d907ebb6c264d1f9145627a0ffdac92d0fb882c027995737a07a40341889"
-oyster_credits = "0x13c6748cd7a70ea4da72e35be4017c572b1bb2d2c03c2b2c350e5e13956528cd"
+oyster_market = "0x37e801b3582a49c8868ef477421bfcd70b1ba85e778c96990dd42ace738cb072"
+usdc = "0x6731f6ae3090289a90421b976df521912350b267adf39926dc702329bfebf970"
 # Testnet
 # usdc = "0xa1ec7fc00a6f40db9693ad1415d0c193ad3906494428cf252621037bd7117e29"
 
