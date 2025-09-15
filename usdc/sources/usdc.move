@@ -1,11 +1,3 @@
-/*
-/// Module: oyster_usdc
-module oyster_usdc::oyster_usdc;
-*/
-
-// For Move coding conventions, see
-// https://docs.sui.io/concepts/sui-move-concepts/conventions
-
 module usdc::usdc {
   use sui::coin;
 
@@ -25,7 +17,7 @@ module usdc::usdc {
     transfer::public_transfer(treasury, tx_context::sender(ctx));
   }
 
-  public entry fun mint(
+  public fun mint(
     cap: &mut coin::TreasuryCap<USDC>,
     amount: u64,
     recipient: address,

@@ -1,20 +1,14 @@
 module oyster_market::lock {
-    // use std::vector;
-    // use std::string;
     use sui::bcs;
     use sui::clock::{Self, Clock};
     use sui::event;
-    use sui::hash; // keccak256
-    // use sui::object::{Self, UID};
+    use sui::hash;
     use sui::table::{Self, Table};
-    // use sui::transfer;
-    // use sui::tx_context::{Self as tx, TxContext};
 
     /// ------------------------------------------------------------------------
     /// Types
     /// ------------------------------------------------------------------------
 
-    /// Mirrors the Solidity `Lock` struct
     public struct Lock has drop, store, copy {
         unlock_time: u64, // milliseconds since Unix epoch
         i_value: u256,
@@ -29,11 +23,8 @@ module oyster_market::lock {
         lock_wait_times: Table<vector<u8>, u64>,
     }
 
-    /// One-time init witness pattern. Create this private type with your package
-    public struct LockInit has drop {}
-
     /// ------------------------------------------------------------------------
-    /// Events (parity with Solidity events)
+    /// Events
     /// ------------------------------------------------------------------------
     public struct LockWaitTimeUpdated has drop, copy, store {
         selector: vector<u8>,
@@ -172,8 +163,7 @@ module oyster_market::lock {
         lock_data: &mut LockData,
         selector: vector<u8>,
         from_key: vector<u8>,
-        to_key: vector<u8>,
-        _ctx: &mut TxContext
+        to_key: vector<u8>
     ) {
         let from_id = lock_id(&selector, &from_key);
         let to_id   = lock_id(&selector, &to_key);
@@ -192,8 +182,7 @@ module oyster_market::lock {
     fun update_lock_wait_time(
         lock_data: &mut LockData,
         selector: vector<u8>,
-        new_wait_ms: u64,
-        _ctx: &mut TxContext
+        new_wait_ms: u64
     ) {
         let prev = if (table::contains(&lock_data.lock_wait_times, selector)) {
             *table::borrow(&lock_data.lock_wait_times, selector)
@@ -214,8 +203,7 @@ module oyster_market::lock {
     public(package) fun update_lock_wait_times(
         lock_data: &mut LockData,
         selectors: vector<vector<u8>>,
-        new_waits_ms: vector<u64>,
-        ctx: &mut TxContext
+        new_waits_ms: vector<u64>
     ) {
         let len = vector::length(&selectors);
         assert!(len == vector::length(&new_waits_ms), E_LOCK_LENGTH_MISMATCH);
@@ -223,7 +211,7 @@ module oyster_market::lock {
         while (i < len) {
             let selector = *vector::borrow(&selectors, i);
             let wait_time = *vector::borrow(&new_waits_ms, i);
-            update_lock_wait_time(lock_data, selector, wait_time, ctx);
+            update_lock_wait_time(lock_data, selector, wait_time);
             i = i + 1;
         }
     }

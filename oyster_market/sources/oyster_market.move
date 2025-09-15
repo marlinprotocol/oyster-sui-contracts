@@ -1,38 +1,17 @@
-/*
-/// Module: oyster_market
-module oyster_market::oyster_market;
-*/
-
-// For Move coding conventions, see
-// https://docs.sui.io/concepts/sui-move-concepts/conventions
-
-// Module: oyster_market.move
 module oyster_market::market {
-    // use sui::object::{Self, ID, UID};
-    // use sui::tx_context::{Self, TxContext};
-    // use sui::transfer;
     use sui::event;
     use sui::clock::{Self, Clock};
     use sui::coin::{Self, Coin};
     use sui::balance::{Self, Balance};
     use sui::table::{Self, Table};
-    // use sui::bag::{Self, Bag};
     use std::string::{Self, String};
-    // use std::vector;
-    // use std::option::{Self, Option};
 
     use usdc::usdc::USDC;
-    // use sui::config;
-    // use std::address;
-    // use std::u64;
     use std::u128;
 
     use oyster_market::lock;
-    // use oyster_market::lock::revert_lock;
     use sui::bcs;
     use sui::hash;
-    // use oyster_market::lock::STATUS_LOCKED;
-    // use oyster_market::lock::STATUS_NONE;
 
     const ADMIN_ROLE: u8 = 1;
 
@@ -41,22 +20,14 @@ module oyster_market::market {
     const E_PROVIDER_ALREADY_EXISTS: u64 = 102;
     const E_PROVIDER_NOT_FOUND: u64 = 103;
     const E_INVALID_PROVIDER_CP: u64 = 104;
-    // const E_JOB_NOT_FOUND: u64 = 105;
-    const E_ONLY_JOB_OWNER: u64 = 106;
-    const E_INVALID_AMOUNT: u64 = 107;
-    // const E_INVALID_RATE: u64 = 108;
-    const E_METADATA_NOT_CHANGED: u64 = 109;
-    // const E_CANNOT_SETTLE_IN_PAST: u64 = 110;
-    // const E_INSUFFICIENT_FUNDS_FOR_SETTLEMENT: u64 = 111;
-    const E_WITHDRAWAL_EXCEEDS_JOB_BALANCE: u64 = 112;
-    // const E_NO_ADMIN_EXISTS: u64 = 113;
-    // const E_RATE_NOT_CHANGED: u64 = 114;
-    const E_ALREADY_HAS_ADMIN_ROLE: u64 = 115;
-    const E_RECIPIENT_NOT_ADMIN_ROLE: u64 = 116;
-    // const E_ALREADY_HAS_EMERGENCY_ROLE: u64 = 117;
-    // const E_RECIPIENT_NOT_EMERGENCY_ROLE: u64 = 118;
-    const E_JOB_NON_ZERO_RATE: u64 = 119;
-    const E_JOB_NO_REQUEST: u64 = 120;
+    const E_ONLY_JOB_OWNER: u64 = 105;
+    const E_INVALID_AMOUNT: u64 = 106;
+    const E_METADATA_NOT_CHANGED: u64 = 107;
+    const E_WITHDRAWAL_EXCEEDS_JOB_BALANCE: u64 = 108;
+    const E_ALREADY_HAS_ADMIN_ROLE: u64 = 109;
+    const E_RECIPIENT_NOT_ADMIN_ROLE: u64 = 110;
+    const E_JOB_NON_ZERO_RATE: u64 = 111;
+    const E_JOB_NO_REQUEST: u64 = 112;
 
     // --- Constants ---
     const EXTRA_DECIMALS: u8 = 12; // 10^12
@@ -180,7 +151,6 @@ module oyster_market::market {
 
         let marketplace = Marketplace {
             id: object::new(ctx),
-            // job_index: (u128::pow(2, 64) - 1) << 64,
             job_index: 0,
             jobs: table::new(ctx),
         };
@@ -189,8 +159,7 @@ module oyster_market::market {
         lock::update_lock_wait_times(
             lock_data,
             selectors,
-            lock_wait_times,
-            ctx
+            lock_wait_times
         );
     }
     
@@ -308,7 +277,6 @@ module oyster_market::market {
     }
 
     fun job_close_internal(
-        // job: &mut Job,
         marketplace: &mut Marketplace,
         lock_data: &mut lock::LockData,
         job_id: u128,
@@ -606,7 +574,6 @@ module oyster_market::market {
     public fun provider_cp(config: &MarketConfig, provider_addr: address): Option<String> {
         if(table::contains(&config.providers, provider_addr)) {
             let provider = table::borrow(&config.providers, provider_addr);
-            // let provider = *provider_ref;
             option::some(provider.cp)
         } else {
             option::none<String>()
