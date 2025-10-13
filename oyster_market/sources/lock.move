@@ -26,18 +26,18 @@ module oyster_market::lock {
     /// ------------------------------------------------------------------------
     /// Events
     /// ------------------------------------------------------------------------
-    public struct LockWaitTimeUpdated has drop, copy, store {
+    public struct LockWaitTimeUpdated has drop, copy {
         selector: vector<u8>,
         prev_lock_time: u64,
         updated_lock_time: u64
     }
-    public struct LockCreated has drop, copy, store {
+    public struct LockCreated has drop, copy {
         selector: vector<u8>,
         key: vector<u8>,
         i_value: u256,
         unlock_time: u64
     }
-    public struct LockDeleted has drop, copy, store {
+    public struct LockDeleted has drop, copy {
         selector: vector<u8>,
         key: vector<u8>,
         i_value: u256
@@ -51,9 +51,11 @@ module oyster_market::lock {
     const E_LOCK_SHOULD_BE_UNLOCKED: u64 = 2;
 
     /// Lock status enum like Solidity. 0=None, 1=Unlocked, 2=Locked
-    const STATUS_NONE: u8 = 0;
-    const STATUS_UNLOCKED: u8 = 1;
-    const STATUS_LOCKED: u8 = 2;
+    public enum LockStatus has drop { 
+        None,
+        Unlocked,
+        Locked
+    }
 
     /// ------------------------------------------------------------------------
     /// Init
@@ -102,15 +104,15 @@ module oyster_market::lock {
         selector: &vector<u8>,
         key: &vector<u8>,
         clock: &Clock
-    ): u8 {
+    ): LockStatus {
         let id = lock_id(selector, key);
-        if (!table::contains(&lock_data.locks, id)) { return STATUS_NONE };
+        if (!table::contains(&lock_data.locks, id)) { return LockStatus::None };
         let unlock_time = table::borrow(&lock_data.locks, id).unlock_time;
         let now = now_ms(clock);
-        if (unlock_time <= now) STATUS_UNLOCKED else STATUS_LOCKED
+        if (unlock_time <= now) LockStatus::Unlocked else LockStatus::Locked
     }
 
-    public fun lock_status_none(): u8 { STATUS_NONE }
+    public fun lock_status_none(): LockStatus { LockStatus::None }
 
     /// ------------------------------------------------------------------------
     /// Mutations
@@ -123,7 +125,7 @@ module oyster_market::lock {
         clock: &Clock
     ): u64 {
         let status = lock_status(lock_data, &selector, &key, clock);
-        assert!(status == STATUS_NONE, E_LOCK_SHOULD_BE_NONE);
+        assert!(status == LockStatus::None, E_LOCK_SHOULD_BE_NONE);
 
         let duration = lock_wait_time_ms(lock_data, selector);
         let id = lock_id(&selector, &key);
@@ -155,7 +157,7 @@ module oyster_market::lock {
         clock: &Clock,
     ): u256 {
         let status = lock_status(lock_data, &selector, &key, clock);
-        assert!(status == STATUS_UNLOCKED, E_LOCK_SHOULD_BE_UNLOCKED);
+        assert!(status == LockStatus::Unlocked, E_LOCK_SHOULD_BE_UNLOCKED);
         revert_lock(lock_data, selector, key)
     }
 
@@ -221,5 +223,8 @@ module oyster_market::lock {
     public fun test_lock_init(ctx: &mut TxContext) {
         init(ctx);
     }
+
+    #[test_only]
+    public fun lock_status_locked(): LockStatus { LockStatus::Locked }
 
 }

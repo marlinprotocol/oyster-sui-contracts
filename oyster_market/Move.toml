@@ -1,46 +1,15 @@
 [package]
 name = "oyster_market"
 edition = "2024.beta" # edition = "legacy" to use legacy (pre-2024) Move
-# license = ""           # e.g., "MIT", "GPL", "Apache 2.0"
-# authors = ["..."]      # e.g., ["Joe Smith (joesmith@noemail.com)", "John Snow (johnsnow@noemail.com)"]
 
 [dependencies]
-
 # For remote import, use the `{ git = "...", subdir = "...", rev = "..." }`.
-# Revision can be a branch, a tag, and a commit hash.
-# MyRemotePackage = { git = "https://some.remote/host.git", subdir = "remote/path", rev = "main" }
 Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "framework/testnet", override = true }
-# Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "testnet-v1.52.2", override = true }
-# usdc = { git = "https://github.com/circlefin/stablecoin-sui.git", subdir = "packages/usdc", rev = "master", addr_subst = {"usdc_usdc" = "usdc"} }
 
 # For local dependencies use `local = path`. Path is relative to the package root
-# Local = { local = "../path/to" }
 usdc = {local = "../usdc"}
 
-# To resolve a version conflict and force a specific version for dependency
-# override use `override = true`
-# Override = { local = "../conflicting/version", override = true }
-
 [addresses]
-# oyster_market = "0x0"
-# usdc = "0x0"
 # Localnet
 oyster_market = "0x37e801b3582a49c8868ef477421bfcd70b1ba85e778c96990dd42ace738cb072"
-usdc = "0x6731f6ae3090289a90421b976df521912350b267adf39926dc702329bfebf970"
-# Testnet
-# usdc = "0xa1ec7fc00a6f40db9693ad1415d0c193ad3906494428cf252621037bd7117e29"
-
-# Named addresses will be accessible in Move as `@name`. They're also exported:
-# for example, `std = "0x1"` is exported by the Standard Library.
-# alice = "0xA11CE"
-
-[dev-dependencies]
-# The dev-dependencies section allows overriding dependencies for `--test` and
-# `--dev` modes. You can introduce test-only dependencies here.
-# Local = { local = "../path/to/dev-build" }
-
-[dev-addresses]
-# The dev-addresses section allows overwriting named addresses for the `--test`
-# and `--dev` modes.
-# alice = "0xB0B"
-
+usdc = "0xf957d907ebb6c264d1f9145627a0ffdac92d0fb882c027995737a07a40341889"

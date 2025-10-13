@@ -702,7 +702,7 @@ module oyster_market::oyster_market_tests {
         assert!(
             lock::lock_status(
                 &lock_data, &rate_lock_selector, &job_id_bytes(job_id), &clock
-            ) == STATUS_LOCKED
+            ) == lock::lock_status_locked()
         );
 
         test_scenario::return_shared(lock_data);
@@ -869,7 +869,7 @@ module oyster_market::oyster_market_tests {
         assert!(
             lock::lock_status(
                 &lock_data, &rate_lock_selector, &job_id_bytes(job_id), &clock
-            ) == STATUS_NONE
+            ) == lock::lock_status_none()
         );
 
         test_scenario::return_shared(lock_data);
@@ -1113,7 +1113,7 @@ module oyster_market::oyster_market_tests {
             assert!(
                 lock::lock_status(
                     &lock_data, &rate_lock_selector, &job_id_bytes(job_id), &clock
-                ) == STATUS_NONE
+                ) == lock::lock_status_none()
             );
 
             let (
@@ -1856,9 +1856,11 @@ module oyster_market::oyster_market_tests {
     // ------------------------X---------------------------X--------------------------------X------------------------
 
     /// Lock status enum like Solidity. 0=None, 1=Unlocked, 2=Locked
-    const STATUS_NONE: u8 = 0;
-    const STATUS_UNLOCKED: u8 = 1;
-    const STATUS_LOCKED: u8 = 2;
+    public enum LockStatus has drop { 
+        None,
+        Unlocked,
+        Locked
+    }
 
     const EXTRA_DECIMALS: u8 = 12;
     public fun calculate_amount_to_pay(rate: u64, duration: u64): u64 {
