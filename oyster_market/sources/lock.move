@@ -187,19 +187,19 @@ module oyster_market::lock {
         new_wait_ms: u64
     ) {
         let prev = if (table::contains(&lock_data.lock_wait_times, selector)) {
-            *table::borrow(&lock_data.lock_wait_times, selector)
-        } else { 0 };
+            let prev_wait_time = *table::borrow(&lock_data.lock_wait_times, selector);
+            *table::borrow_mut(&mut lock_data.lock_wait_times, selector) = new_wait_ms;
+            prev_wait_time
+        } else { 
+            table::add(&mut lock_data.lock_wait_times, selector, new_wait_ms);
+            0 
+        };
 
         event::emit(LockWaitTimeUpdated {
             selector,
             prev_lock_time: prev,
             updated_lock_time: new_wait_ms
         });
-        if (table::contains(&lock_data.lock_wait_times, selector)) {
-            *table::borrow_mut(&mut lock_data.lock_wait_times, selector) = new_wait_ms;
-        } else {
-            table::add(&mut lock_data.lock_wait_times, selector, new_wait_ms);
-        }
     }
 
     public(package) fun update_lock_wait_times(
