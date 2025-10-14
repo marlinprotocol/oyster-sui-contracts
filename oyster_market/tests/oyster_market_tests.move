@@ -23,9 +23,11 @@ module oyster_market::oyster_market_tests {
         // let admin = test_scenario::create_signer(&scenario);
         // let mut ctx = test_scenario::ctx_with_sender(&scenario, admin);
 
+        market::test_market_init(scenario.ctx());
         lock::test_lock_init(scenario.ctx());
         scenario.next_tx(admin);
 
+        let mut config = scenario.take_shared<MarketConfig>();
         let mut lock_data = scenario.take_shared<LockData>();
         let rate_lock_selector = lock_selector(b"RATE_LOCK");
         let selectors: vector<vector<u8>> = vector[rate_lock_selector];
@@ -33,25 +35,77 @@ module oyster_market::oyster_market_tests {
 
         // Initialize the market config and marketplace
         market::initialize(
+            &mut config,
             &mut lock_data,
             admin,
             selectors,
-            lock_wait_times,
-            scenario.ctx()
+            lock_wait_times
         );
 
         scenario.next_tx(admin);
         {
-            let config = scenario.take_shared<MarketConfig>();
+            // let config = scenario.take_shared<MarketConfig>();
             assert!(market::has_admin_role(&config, admin));
 
             let marketplace = scenario.take_shared<Marketplace>();
             assert!(market::current_job_index(&marketplace) == 0);
 
-            test_scenario::return_shared(config);
             test_scenario::return_shared(marketplace);
         };
 
+        test_scenario::return_shared(config);
+        test_scenario::return_shared(lock_data);
+        scenario.end();
+    }
+
+    #[test, expected_failure(abort_code = market::E_ALREADY_INITIALIZED)]
+    fun test_initialize_again() {
+        // Use test_scenario to create a test sender and context
+        let admin = @0x1; // Simulate an admin address
+        // Create a test scenario
+        let mut scenario = test_scenario::begin(@0x1);
+        // let admin = test_scenario::create_signer(&scenario);
+        // let mut ctx = test_scenario::ctx_with_sender(&scenario, admin);
+
+        market::test_market_init(scenario.ctx());
+        lock::test_lock_init(scenario.ctx());
+        scenario.next_tx(admin);
+
+        let mut config = scenario.take_shared<MarketConfig>();
+        let mut lock_data = scenario.take_shared<LockData>();
+        let rate_lock_selector = lock_selector(b"RATE_LOCK");
+        let selectors: vector<vector<u8>> = vector[rate_lock_selector];
+        let lock_wait_times = vector[1000];
+
+        // Initialize the market config and marketplace
+        market::initialize(
+            &mut config,
+            &mut lock_data,
+            admin,
+            selectors,
+            lock_wait_times
+        );
+
+        scenario.next_tx(admin);
+        {
+            assert!(market::has_admin_role(&config, admin));
+
+            let marketplace = scenario.take_shared<Marketplace>();
+            assert!(market::current_job_index(&marketplace) == 0);
+
+            test_scenario::return_shared(marketplace);
+        };
+
+        // Initialize the market config and marketplace
+        market::initialize(
+            &mut config,
+            &mut lock_data,
+            admin,
+            selectors,
+            lock_wait_times,
+        );
+
+        test_scenario::return_shared(config);
         test_scenario::return_shared(lock_data);
         scenario.end();
     }
@@ -63,9 +117,11 @@ module oyster_market::oyster_market_tests {
         // Create a test scenario
         let mut scenario = test_scenario::begin(@0x1);
 
+        market::test_market_init(scenario.ctx());
         lock::test_lock_init(scenario.ctx());
         scenario.next_tx(admin);
 
+        let mut config = scenario.take_shared<MarketConfig>();
         let mut lock_data = scenario.take_shared<LockData>();
         let rate_lock_selector = lock_selector(b"RATE_LOCK");
         let selectors: vector<vector<u8>> = vector[rate_lock_selector];
@@ -73,15 +129,14 @@ module oyster_market::oyster_market_tests {
 
         // Initialize the market config and marketplace
         market::initialize(
+            &mut config,
             &mut lock_data,
             admin,
             selectors,
-            lock_wait_times,
-            scenario.ctx()
+            lock_wait_times
         );
 
         scenario.next_tx(admin);
-        let mut config = scenario.take_shared<MarketConfig>();
 
         let cp = string::utf8(b"https://provider.example.com");
         scenario.next_tx(admin);
@@ -112,9 +167,11 @@ module oyster_market::oyster_market_tests {
         // Create a test scenario
         let mut scenario = test_scenario::begin(@0x1);
 
+        market::test_market_init(scenario.ctx());
         lock::test_lock_init(scenario.ctx());
         scenario.next_tx(admin);
 
+        let mut config = scenario.take_shared<MarketConfig>();
         let mut lock_data = scenario.take_shared<LockData>();
         let rate_lock_selector = lock_selector(b"RATE_LOCK");
         let selectors: vector<vector<u8>> = vector[rate_lock_selector];
@@ -122,15 +179,14 @@ module oyster_market::oyster_market_tests {
 
         // Initialize the market config and marketplace
         market::initialize(
+            &mut config,
             &mut lock_data,
             admin,
             selectors,
-            lock_wait_times,
-            scenario.ctx()
+            lock_wait_times
         );
 
         scenario.next_tx(admin);
-        let mut config = scenario.take_shared<MarketConfig>();
 
         let cp = string::utf8(b"https://provider.example.com");
         scenario.next_tx(admin);
@@ -168,9 +224,11 @@ module oyster_market::oyster_market_tests {
         // Create a test scenario
         let mut scenario = test_scenario::begin(@0x1);
 
+        market::test_market_init(scenario.ctx());
         lock::test_lock_init(scenario.ctx());
         scenario.next_tx(admin);
 
+        let mut config = scenario.take_shared<MarketConfig>();
         let mut lock_data = scenario.take_shared<LockData>();
         let rate_lock_selector = lock_selector(b"RATE_LOCK");
         let selectors: vector<vector<u8>> = vector[rate_lock_selector];
@@ -178,15 +236,14 @@ module oyster_market::oyster_market_tests {
 
         // Initialize the market config and marketplace
         market::initialize(
+            &mut config,
             &mut lock_data,
             admin,
             selectors,
-            lock_wait_times,
-            scenario.ctx()
+            lock_wait_times
         );
 
         scenario.next_tx(admin);
-        let mut config = scenario.take_shared<MarketConfig>();
 
         let cp = string::utf8(b"https://provider.example.com");
         scenario.next_tx(admin);
@@ -218,9 +275,11 @@ module oyster_market::oyster_market_tests {
         let admin = @0x1;
         let mut scenario = test_scenario::begin(admin);
 
+        market::test_market_init(scenario.ctx());
         lock::test_lock_init(scenario.ctx());
         scenario.next_tx(admin);
 
+        let mut config = scenario.take_shared<MarketConfig>();
         let mut lock_data = scenario.take_shared<LockData>();
         let rate_lock_selector = lock_selector(b"RATE_LOCK");
         let selectors: vector<vector<u8>> = vector[rate_lock_selector];
@@ -228,15 +287,14 @@ module oyster_market::oyster_market_tests {
 
         // Initialize the market config and marketplace
         market::initialize(
+            &mut config,
             &mut lock_data,
             admin,
             selectors,
-            lock_wait_times,
-            scenario.ctx()
+            lock_wait_times
         );
 
         scenario.next_tx(admin);
-        let mut config = scenario.take_shared<MarketConfig>();
         let mut marketplace = scenario.take_shared<Marketplace>();
 
         let cp = string::utf8(b"https://provider.example.com");
@@ -255,7 +313,7 @@ module oyster_market::oyster_market_tests {
         scenario.next_tx(admin);
 
         // Create Option<Coin<USDC>> for initial_payment
-        let initial_payment: option::Option<Coin<USDC>> = option::some(usdc_coin);
+        // let initial_payment: option::Option<Coin<USDC>> = option::some(usdc_coin);
 
         // Get clock and ctx from scenario
         let clock = clock::create_for_testing(scenario.ctx());
@@ -266,7 +324,7 @@ module oyster_market::oyster_market_tests {
             metadata,
             provider_addr,
             rate,
-            initial_payment,
+            usdc_coin,
             &clock,
             ctx
         );
@@ -312,9 +370,11 @@ module oyster_market::oyster_market_tests {
         let admin = @0x1;
         let mut scenario = test_scenario::begin(admin);
 
+        market::test_market_init(scenario.ctx());
         lock::test_lock_init(scenario.ctx());
         scenario.next_tx(admin);
 
+        let mut config = scenario.take_shared<MarketConfig>();
         let mut lock_data = scenario.take_shared<LockData>();
         let rate_lock_selector = lock_selector(b"RATE_LOCK");
         let selectors: vector<vector<u8>> = vector[rate_lock_selector];
@@ -322,15 +382,14 @@ module oyster_market::oyster_market_tests {
 
         // Initialize the market config and marketplace
         market::initialize(
+            &mut config,
             &mut lock_data,
             admin,
             selectors,
-            lock_wait_times,
-            scenario.ctx()
+            lock_wait_times
         );
 
         scenario.next_tx(admin);
-        let mut config = scenario.take_shared<MarketConfig>();
         let mut marketplace = scenario.take_shared<Marketplace>();
 
         let cp = string::utf8(b"https://provider.example.com");
@@ -348,9 +407,6 @@ module oyster_market::oyster_market_tests {
 
         scenario.next_tx(admin);
 
-        // Create Option<Coin<USDC>> for initial_payment
-        let initial_payment: option::Option<Coin<USDC>> = option::some(usdc_coin);
-
         // Get clock and ctx from scenario
         let mut clock = clock::create_for_testing(scenario.ctx());
         // let ctx = scenario.ctx();
@@ -360,7 +416,7 @@ module oyster_market::oyster_market_tests {
             metadata,
             provider_addr,
             rate,
-            initial_payment,
+            usdc_coin,
             &clock,
             scenario.ctx()
         );
@@ -416,9 +472,11 @@ module oyster_market::oyster_market_tests {
         let admin = @0x1;
         let mut scenario = test_scenario::begin(admin);
 
+        market::test_market_init(scenario.ctx());
         lock::test_lock_init(scenario.ctx());
         scenario.next_tx(admin);
 
+        let mut config = scenario.take_shared<MarketConfig>();
         let mut lock_data = scenario.take_shared<LockData>();
         let rate_lock_selector = lock_selector(b"RATE_LOCK");
         let selectors: vector<vector<u8>> = vector[rate_lock_selector];
@@ -426,15 +484,14 @@ module oyster_market::oyster_market_tests {
 
         // Initialize the market config and marketplace
         market::initialize(
+            &mut config,
             &mut lock_data,
             admin,
             selectors,
-            lock_wait_times,
-            scenario.ctx()
+            lock_wait_times
         );
 
         scenario.next_tx(admin);
-        let mut config = scenario.take_shared<MarketConfig>();
         let mut marketplace = scenario.take_shared<Marketplace>();
 
         let cp = string::utf8(b"https://provider.example.com");
@@ -452,9 +509,6 @@ module oyster_market::oyster_market_tests {
 
         scenario.next_tx(admin);
 
-        // Create Option<Coin<USDC>> for initial_payment
-        let initial_payment: option::Option<Coin<USDC>> = option::some(usdc_coin);
-
         // Get clock and ctx from scenario
         let clock = clock::create_for_testing(scenario.ctx());
 
@@ -463,7 +517,7 @@ module oyster_market::oyster_market_tests {
             metadata,
             provider_addr,
             rate,
-            initial_payment,
+            usdc_coin,
             &clock,
             scenario.ctx()
         );
@@ -475,12 +529,10 @@ module oyster_market::oyster_market_tests {
         let usdc_coin = coin::mint_for_testing<USDC>(deposit_amount, scenario.ctx());
         scenario.next_tx(admin);
 
-        let payment_to_deposit: option::Option<Coin<USDC>> = option::some(usdc_coin);
-
         market::job_deposit(
             &mut marketplace,
             job_id,
-            payment_to_deposit,
+            usdc_coin,
             scenario.ctx()
         );
 
@@ -522,9 +574,11 @@ module oyster_market::oyster_market_tests {
         let provider = @0x456;
         let mut scenario = test_scenario::begin(admin);
 
+        market::test_market_init(scenario.ctx());
         lock::test_lock_init(scenario.ctx());
         scenario.next_tx(admin);
 
+        let mut config = scenario.take_shared<MarketConfig>();
         let mut lock_data = scenario.take_shared<LockData>();
         let rate_lock_selector = lock_selector(b"RATE_LOCK");
         let selectors: vector<vector<u8>> = vector[rate_lock_selector];
@@ -532,15 +586,14 @@ module oyster_market::oyster_market_tests {
 
         // Initialize the market config and marketplace
         market::initialize(
+            &mut config,
             &mut lock_data,
             admin,
             selectors,
-            lock_wait_times,
-            scenario.ctx()
+            lock_wait_times
         );
 
         scenario.next_tx(admin);
-        let mut config = scenario.take_shared<MarketConfig>();
         let mut marketplace = scenario.take_shared<Marketplace>();
 
         scenario.next_tx(provider);
@@ -557,8 +610,6 @@ module oyster_market::oyster_market_tests {
         let usdc_coin = coin::mint_for_testing<USDC>(usdc_amount, scenario.ctx());
         scenario.next_tx(admin);
 
-        // Create Option<Coin<USDC>> for initial_payment
-        let initial_payment: option::Option<Coin<USDC>> = option::some(usdc_coin);
         // Get clock and ctx from scenario
         let mut clock = clock::create_for_testing(scenario.ctx());
 
@@ -567,7 +618,7 @@ module oyster_market::oyster_market_tests {
             metadata,
             provider,
             rate,
-            initial_payment,
+            usdc_coin,
             &clock,
             scenario.ctx()
         );
@@ -635,9 +686,11 @@ module oyster_market::oyster_market_tests {
         let provider = @0x456;
         let mut scenario = test_scenario::begin(admin);
 
+        market::test_market_init(scenario.ctx());
         lock::test_lock_init(scenario.ctx());
         scenario.next_tx(admin);
 
+        let mut config = scenario.take_shared<MarketConfig>();
         let mut lock_data = scenario.take_shared<LockData>();
         let rate_lock_selector = lock_selector(b"RATE_LOCK");
         let selectors: vector<vector<u8>> = vector[rate_lock_selector];
@@ -645,15 +698,14 @@ module oyster_market::oyster_market_tests {
 
         // Initialize the market config and marketplace
         market::initialize(
+            &mut config,
             &mut lock_data,
             admin,
             selectors,
-            lock_wait_times,
-            scenario.ctx()
+            lock_wait_times
         );
 
         scenario.next_tx(admin);
-        let mut config = scenario.take_shared<MarketConfig>();
         let mut marketplace = scenario.take_shared<Marketplace>();
 
         scenario.next_tx(provider);
@@ -671,9 +723,6 @@ module oyster_market::oyster_market_tests {
         let usdc_coin = coin::mint_for_testing<USDC>(usdc_amount, scenario.ctx());
         scenario.next_tx(admin);
 
-        // Create Option<Coin<USDC>> for initial_payment
-        let initial_payment: option::Option<Coin<USDC>> = option::some(usdc_coin);
-
         // Get clock and ctx from scenario
         let clock = clock::create_for_testing(scenario.ctx());
 
@@ -682,7 +731,7 @@ module oyster_market::oyster_market_tests {
             metadata,
             provider,
             rate,
-            initial_payment,
+            usdc_coin,
             &clock,
             scenario.ctx()
         );
@@ -718,9 +767,11 @@ module oyster_market::oyster_market_tests {
         let provider = @0x456;
         let mut scenario = test_scenario::begin(admin);
 
+        market::test_market_init(scenario.ctx());
         lock::test_lock_init(scenario.ctx());
         scenario.next_tx(admin);
 
+        let mut config = scenario.take_shared<MarketConfig>();
         let mut lock_data = scenario.take_shared<LockData>();
         let rate_lock_selector = lock_selector(b"RATE_LOCK");
         let selectors: vector<vector<u8>> = vector[rate_lock_selector];
@@ -728,15 +779,14 @@ module oyster_market::oyster_market_tests {
 
         // Initialize the market config and marketplace
         market::initialize(
+            &mut config,
             &mut lock_data,
             admin,
             selectors,
-            lock_wait_times,
-            scenario.ctx()
+            lock_wait_times
         );
 
         scenario.next_tx(admin);
-        let mut config = scenario.take_shared<MarketConfig>();
         let mut marketplace = scenario.take_shared<Marketplace>();
 
         scenario.next_tx(provider);
@@ -754,9 +804,6 @@ module oyster_market::oyster_market_tests {
         let usdc_coin = coin::mint_for_testing<USDC>(usdc_amount, scenario.ctx());
         scenario.next_tx(admin);
 
-        // Create Option<Coin<USDC>> for initial_payment
-        let initial_payment: option::Option<Coin<USDC>> = option::some(usdc_coin);
-
         // Get clock and ctx from scenario
         let clock = clock::create_for_testing(scenario.ctx());
 
@@ -765,7 +812,7 @@ module oyster_market::oyster_market_tests {
             metadata,
             provider,
             rate,
-            initial_payment,
+            usdc_coin,
             &clock,
             scenario.ctx()
         );
@@ -796,9 +843,11 @@ module oyster_market::oyster_market_tests {
         let provider = @0x456;
         let mut scenario = test_scenario::begin(admin);
 
+        market::test_market_init(scenario.ctx());
         lock::test_lock_init(scenario.ctx());
         scenario.next_tx(admin);
 
+        let mut config = scenario.take_shared<MarketConfig>();
         let mut lock_data = scenario.take_shared<LockData>();
         let rate_lock_selector = lock_selector(b"RATE_LOCK");
         let selectors: vector<vector<u8>> = vector[rate_lock_selector];
@@ -806,15 +855,14 @@ module oyster_market::oyster_market_tests {
 
         // Initialize the market config and marketplace
         market::initialize(
+            &mut config,
             &mut lock_data,
             admin,
             selectors,
-            lock_wait_times,
-            scenario.ctx()
+            lock_wait_times
         );
 
         scenario.next_tx(admin);
-        let mut config = scenario.take_shared<MarketConfig>();
         let mut marketplace = scenario.take_shared<Marketplace>();
 
         scenario.next_tx(provider);
@@ -832,9 +880,6 @@ module oyster_market::oyster_market_tests {
         let usdc_coin = coin::mint_for_testing<USDC>(usdc_amount, scenario.ctx());
         scenario.next_tx(admin);
 
-        // Create Option<Coin<USDC>> for initial_payment
-        let initial_payment: option::Option<Coin<USDC>> = option::some(usdc_coin);
-
         // Get clock and ctx from scenario
         let clock = clock::create_for_testing(scenario.ctx());
 
@@ -843,7 +888,7 @@ module oyster_market::oyster_market_tests {
             metadata,
             provider,
             rate,
-            initial_payment,
+            usdc_coin,
             &clock,
             scenario.ctx()
         );
@@ -885,9 +930,11 @@ module oyster_market::oyster_market_tests {
         let provider = @0x456;
         let mut scenario = test_scenario::begin(admin);
 
+        market::test_market_init(scenario.ctx());
         lock::test_lock_init(scenario.ctx());
         scenario.next_tx(admin);
 
+        let mut config = scenario.take_shared<MarketConfig>();
         let mut lock_data = scenario.take_shared<LockData>();
         let rate_lock_selector = lock_selector(b"RATE_LOCK");
         let selectors: vector<vector<u8>> = vector[rate_lock_selector];
@@ -895,15 +942,14 @@ module oyster_market::oyster_market_tests {
 
         // Initialize the market config and marketplace
         market::initialize(
+            &mut config,
             &mut lock_data,
             admin,
             selectors,
-            lock_wait_times,
-            scenario.ctx()
+            lock_wait_times
         );
 
         scenario.next_tx(admin);
-        let mut config = scenario.take_shared<MarketConfig>();
         let mut marketplace = scenario.take_shared<Marketplace>();
 
         scenario.next_tx(provider);
@@ -921,9 +967,6 @@ module oyster_market::oyster_market_tests {
         let usdc_coin = coin::mint_for_testing<USDC>(usdc_amount, scenario.ctx());
         scenario.next_tx(admin);
 
-        // Create Option<Coin<USDC>> for initial_payment
-        let initial_payment: option::Option<Coin<USDC>> = option::some(usdc_coin);
-
         // Get clock and ctx from scenario
         let clock = clock::create_for_testing(scenario.ctx());
 
@@ -932,7 +975,7 @@ module oyster_market::oyster_market_tests {
             metadata,
             provider,
             rate,
-            initial_payment,
+            usdc_coin,
             &clock,
             scenario.ctx()
         );
@@ -967,9 +1010,11 @@ module oyster_market::oyster_market_tests {
         let provider = @0x456;
         let mut scenario = test_scenario::begin(admin);
 
+        market::test_market_init(scenario.ctx());
         lock::test_lock_init(scenario.ctx());
         scenario.next_tx(admin);
 
+        let mut config = scenario.take_shared<MarketConfig>();
         let mut lock_data = scenario.take_shared<LockData>();
         let rate_lock_selector = lock_selector(b"RATE_LOCK");
         let selectors: vector<vector<u8>> = vector[rate_lock_selector];
@@ -977,15 +1022,14 @@ module oyster_market::oyster_market_tests {
 
         // Initialize the market config and marketplace
         market::initialize(
+            &mut config,
             &mut lock_data,
             admin,
             selectors,
-            lock_wait_times,
-            scenario.ctx()
+            lock_wait_times
         );
 
         scenario.next_tx(admin);
-        let mut config = scenario.take_shared<MarketConfig>();
         let mut marketplace = scenario.take_shared<Marketplace>();
 
         scenario.next_tx(provider);
@@ -1003,9 +1047,6 @@ module oyster_market::oyster_market_tests {
         let usdc_coin = coin::mint_for_testing<USDC>(usdc_amount, scenario.ctx());
         scenario.next_tx(admin);
 
-        // Create Option<Coin<USDC>> for initial_payment
-        let initial_payment: option::Option<Coin<USDC>> = option::some(usdc_coin);
-
         // Get clock and ctx from scenario
         let clock = clock::create_for_testing(scenario.ctx());
 
@@ -1014,7 +1055,7 @@ module oyster_market::oyster_market_tests {
             metadata,
             provider,
             rate,
-            initial_payment,
+            usdc_coin,
             &clock,
             scenario.ctx()
         );
@@ -1038,9 +1079,11 @@ module oyster_market::oyster_market_tests {
         let provider = @0x456;
         let mut scenario = test_scenario::begin(admin);
 
+        market::test_market_init(scenario.ctx());
         lock::test_lock_init(scenario.ctx());
         scenario.next_tx(admin);
 
+        let mut config = scenario.take_shared<MarketConfig>();
         let mut lock_data = scenario.take_shared<LockData>();
         let rate_lock_selector = lock_selector(b"RATE_LOCK");
         let selectors: vector<vector<u8>> = vector[rate_lock_selector];
@@ -1048,15 +1091,14 @@ module oyster_market::oyster_market_tests {
 
         // Initialize the market config and marketplace
         market::initialize(
+            &mut config,
             &mut lock_data,
             admin,
             selectors,
-            lock_wait_times,
-            scenario.ctx()
+            lock_wait_times
         );
 
         scenario.next_tx(admin);
-        let mut config = scenario.take_shared<MarketConfig>();
         let mut marketplace = scenario.take_shared<Marketplace>();
 
         scenario.next_tx(provider);
@@ -1074,9 +1116,6 @@ module oyster_market::oyster_market_tests {
         let usdc_coin = coin::mint_for_testing<USDC>(usdc_amount, scenario.ctx());
         scenario.next_tx(admin);
 
-        // Create Option<Coin<USDC>> for initial_payment
-        let initial_payment: option::Option<Coin<USDC>> = option::some(usdc_coin);
-
         // Get clock and ctx from scenario
         let mut clock = clock::create_for_testing(scenario.ctx());
 
@@ -1085,7 +1124,7 @@ module oyster_market::oyster_market_tests {
             metadata,
             provider,
             rate,
-            initial_payment,
+            usdc_coin,
             &clock,
             scenario.ctx()
         );
@@ -1159,9 +1198,11 @@ module oyster_market::oyster_market_tests {
         let provider = @0x456;
         let mut scenario = test_scenario::begin(admin);
 
+        market::test_market_init(scenario.ctx());
         lock::test_lock_init(scenario.ctx());
         scenario.next_tx(admin);
 
+        let mut config = scenario.take_shared<MarketConfig>();
         let mut lock_data = scenario.take_shared<LockData>();
         let rate_lock_selector = lock_selector(b"RATE_LOCK");
         let selectors: vector<vector<u8>> = vector[rate_lock_selector];
@@ -1169,15 +1210,14 @@ module oyster_market::oyster_market_tests {
 
         // Initialize the market config and marketplace
         market::initialize(
+            &mut config,
             &mut lock_data,
             admin,
             selectors,
-            lock_wait_times,
-            scenario.ctx()
+            lock_wait_times
         );
 
         scenario.next_tx(admin);
-        let mut config = scenario.take_shared<MarketConfig>();
         let mut marketplace = scenario.take_shared<Marketplace>();
 
         scenario.next_tx(provider);
@@ -1195,9 +1235,6 @@ module oyster_market::oyster_market_tests {
         let usdc_coin = coin::mint_for_testing<USDC>(usdc_amount, scenario.ctx());
         scenario.next_tx(admin);
 
-        // Create Option<Coin<USDC>> for initial_payment
-        let initial_payment: option::Option<Coin<USDC>> = option::some(usdc_coin);
-
         // Get clock and ctx from scenario
         let clock = clock::create_for_testing(scenario.ctx());
 
@@ -1206,7 +1243,7 @@ module oyster_market::oyster_market_tests {
             metadata,
             provider,
             rate,
-            initial_payment,
+            usdc_coin,
             &clock,
             scenario.ctx()
         );
@@ -1241,9 +1278,11 @@ module oyster_market::oyster_market_tests {
         let provider = @0x456;
         let mut scenario = test_scenario::begin(admin);
 
+        market::test_market_init(scenario.ctx());
         lock::test_lock_init(scenario.ctx());
         scenario.next_tx(admin);
 
+        let mut config = scenario.take_shared<MarketConfig>();
         let mut lock_data = scenario.take_shared<LockData>();
         let rate_lock_selector = lock_selector(b"RATE_LOCK");
         let selectors: vector<vector<u8>> = vector[rate_lock_selector];
@@ -1251,15 +1290,14 @@ module oyster_market::oyster_market_tests {
 
         // Initialize the market config and marketplace
         market::initialize(
+            &mut config,
             &mut lock_data,
             admin,
             selectors,
-            lock_wait_times,
-            scenario.ctx()
+            lock_wait_times
         );
 
         scenario.next_tx(admin);
-        let mut config = scenario.take_shared<MarketConfig>();
         let mut marketplace = scenario.take_shared<Marketplace>();
 
         scenario.next_tx(provider);
@@ -1277,9 +1315,6 @@ module oyster_market::oyster_market_tests {
         let usdc_coin = coin::mint_for_testing<USDC>(usdc_amount, scenario.ctx());
         scenario.next_tx(admin);
 
-        // Create Option<Coin<USDC>> for initial_payment
-        let initial_payment: option::Option<Coin<USDC>> = option::some(usdc_coin);
-
         // Get clock and ctx from scenario
         let clock = clock::create_for_testing(scenario.ctx());
 
@@ -1288,7 +1323,7 @@ module oyster_market::oyster_market_tests {
             metadata,
             provider,
             rate,
-            initial_payment,
+            usdc_coin,
             &clock,
             scenario.ctx()
         );
@@ -1323,9 +1358,11 @@ module oyster_market::oyster_market_tests {
         let provider = @0x456;
         let mut scenario = test_scenario::begin(admin);
 
+        market::test_market_init(scenario.ctx());
         lock::test_lock_init(scenario.ctx());
         scenario.next_tx(admin);
 
+        let mut config = scenario.take_shared<MarketConfig>();
         let mut lock_data = scenario.take_shared<LockData>();
         let rate_lock_selector = lock_selector(b"RATE_LOCK");
         let selectors: vector<vector<u8>> = vector[rate_lock_selector];
@@ -1333,15 +1370,14 @@ module oyster_market::oyster_market_tests {
 
         // Initialize the market config and marketplace
         market::initialize(
+            &mut config,
             &mut lock_data,
             admin,
             selectors,
-            lock_wait_times,
-            scenario.ctx()
+            lock_wait_times
         );
 
         scenario.next_tx(admin);
-        let mut config = scenario.take_shared<MarketConfig>();
         let mut marketplace = scenario.take_shared<Marketplace>();
 
         scenario.next_tx(provider);
@@ -1359,9 +1395,6 @@ module oyster_market::oyster_market_tests {
         let usdc_coin = coin::mint_for_testing<USDC>(usdc_amount, scenario.ctx());
         scenario.next_tx(admin);
 
-        // Create Option<Coin<USDC>> for initial_payment
-        let initial_payment: option::Option<Coin<USDC>> = option::some(usdc_coin);
-
         // Get clock and ctx from scenario
         let clock = clock::create_for_testing(scenario.ctx());
 
@@ -1370,7 +1403,7 @@ module oyster_market::oyster_market_tests {
             metadata,
             provider,
             rate,
-            initial_payment,
+            usdc_coin,
             &clock,
             scenario.ctx()
         );
@@ -1407,9 +1440,11 @@ module oyster_market::oyster_market_tests {
         let provider = @0x456;
         let mut scenario = test_scenario::begin(admin);
 
+        market::test_market_init(scenario.ctx());
         lock::test_lock_init(scenario.ctx());
         scenario.next_tx(admin);
 
+        let mut config = scenario.take_shared<MarketConfig>();
         let mut lock_data = scenario.take_shared<LockData>();
         let rate_lock_selector = lock_selector(b"RATE_LOCK");
         let selectors: vector<vector<u8>> = vector[rate_lock_selector];
@@ -1417,15 +1452,14 @@ module oyster_market::oyster_market_tests {
 
         // Initialize the market config and marketplace
         market::initialize(
+            &mut config,
             &mut lock_data,
             admin,
             selectors,
-            lock_wait_times,
-            scenario.ctx()
+            lock_wait_times
         );
 
         scenario.next_tx(admin);
-        let mut config = scenario.take_shared<MarketConfig>();
         let mut marketplace = scenario.take_shared<Marketplace>();
 
         scenario.next_tx(provider);
@@ -1443,9 +1477,6 @@ module oyster_market::oyster_market_tests {
         let usdc_coin = coin::mint_for_testing<USDC>(usdc_amount, scenario.ctx());
         scenario.next_tx(admin);
 
-        // Create Option<Coin<USDC>> for initial_payment
-        let initial_payment: option::Option<Coin<USDC>> = option::some(usdc_coin);
-
         // Get clock and ctx from scenario
         let mut clock = clock::create_for_testing(scenario.ctx());
 
@@ -1454,7 +1485,7 @@ module oyster_market::oyster_market_tests {
             metadata,
             provider,
             rate,
-            initial_payment,
+            usdc_coin,
             &clock,
             scenario.ctx()
         );
@@ -1512,9 +1543,11 @@ module oyster_market::oyster_market_tests {
         let provider = @0x456;
         let mut scenario = test_scenario::begin(admin);
 
+        market::test_market_init(scenario.ctx());
         lock::test_lock_init(scenario.ctx());
         scenario.next_tx(admin);
 
+        let mut config = scenario.take_shared<MarketConfig>();
         let mut lock_data = scenario.take_shared<LockData>();
         let rate_lock_selector = lock_selector(b"RATE_LOCK");
         let selectors: vector<vector<u8>> = vector[rate_lock_selector];
@@ -1522,15 +1555,14 @@ module oyster_market::oyster_market_tests {
 
         // Initialize the market config and marketplace
         market::initialize(
+            &mut config,
             &mut lock_data,
             admin,
             selectors,
-            lock_wait_times,
-            scenario.ctx()
+            lock_wait_times
         );
 
         scenario.next_tx(admin);
-        let mut config = scenario.take_shared<MarketConfig>();
         let mut marketplace = scenario.take_shared<Marketplace>();
 
         scenario.next_tx(provider);
@@ -1548,9 +1580,6 @@ module oyster_market::oyster_market_tests {
         let usdc_coin = coin::mint_for_testing<USDC>(usdc_amount, scenario.ctx());
         scenario.next_tx(admin);
 
-        // Create Option<Coin<USDC>> for initial_payment
-        let initial_payment: option::Option<Coin<USDC>> = option::some(usdc_coin);
-
         // Get clock and ctx from scenario
         let clock = clock::create_for_testing(scenario.ctx());
 
@@ -1559,7 +1588,7 @@ module oyster_market::oyster_market_tests {
             metadata,
             provider,
             rate,
-            initial_payment,
+            usdc_coin,
             &clock,
             scenario.ctx()
         );
@@ -1587,9 +1616,11 @@ module oyster_market::oyster_market_tests {
         let provider = @0x456;
         let mut scenario = test_scenario::begin(admin);
 
+        market::test_market_init(scenario.ctx());
         lock::test_lock_init(scenario.ctx());
         scenario.next_tx(admin);
 
+        let mut config = scenario.take_shared<MarketConfig>();
         let mut lock_data = scenario.take_shared<LockData>();
         let rate_lock_selector = lock_selector(b"RATE_LOCK");
         let selectors: vector<vector<u8>> = vector[rate_lock_selector];
@@ -1597,15 +1628,14 @@ module oyster_market::oyster_market_tests {
 
         // Initialize the market config and marketplace
         market::initialize(
+            &mut config,
             &mut lock_data,
             admin,
             selectors,
-            lock_wait_times,
-            scenario.ctx()
+            lock_wait_times
         );
 
         scenario.next_tx(admin);
-        let mut config = scenario.take_shared<MarketConfig>();
         let mut marketplace = scenario.take_shared<Marketplace>();
 
         scenario.next_tx(provider);
@@ -1623,9 +1653,6 @@ module oyster_market::oyster_market_tests {
         let usdc_coin = coin::mint_for_testing<USDC>(usdc_amount, scenario.ctx());
         scenario.next_tx(admin);
 
-        // Create Option<Coin<USDC>> for initial_payment
-        let initial_payment: option::Option<Coin<USDC>> = option::some(usdc_coin);
-
         // Get clock and ctx from scenario
         let clock = clock::create_for_testing(scenario.ctx());
 
@@ -1634,7 +1661,7 @@ module oyster_market::oyster_market_tests {
             metadata,
             provider,
             rate,
-            initial_payment,
+            usdc_coin,
             &clock,
             scenario.ctx()
         );
@@ -1672,9 +1699,11 @@ module oyster_market::oyster_market_tests {
         let provider = @0x456;
         let mut scenario = test_scenario::begin(admin);
 
+        market::test_market_init(scenario.ctx());
         lock::test_lock_init(scenario.ctx());
         scenario.next_tx(admin);
 
+        let mut config = scenario.take_shared<MarketConfig>();
         let mut lock_data = scenario.take_shared<LockData>();
         let rate_lock_selector = lock_selector(b"RATE_LOCK");
         let selectors: vector<vector<u8>> = vector[rate_lock_selector];
@@ -1682,15 +1711,14 @@ module oyster_market::oyster_market_tests {
 
         // Initialize the market config and marketplace
         market::initialize(
+            &mut config,
             &mut lock_data,
             admin,
             selectors,
-            lock_wait_times,
-            scenario.ctx()
+            lock_wait_times
         );
 
         scenario.next_tx(admin);
-        let mut config = scenario.take_shared<MarketConfig>();
         let mut marketplace = scenario.take_shared<Marketplace>();
 
         scenario.next_tx(provider);
@@ -1708,9 +1736,6 @@ module oyster_market::oyster_market_tests {
         let usdc_coin = coin::mint_for_testing<USDC>(usdc_amount, scenario.ctx());
         scenario.next_tx(admin);
 
-        // Create Option<Coin<USDC>> for initial_payment
-        let initial_payment: option::Option<Coin<USDC>> = option::some(usdc_coin);
-
         // Get clock and ctx from scenario
         let mut clock = clock::create_for_testing(scenario.ctx());
 
@@ -1719,7 +1744,7 @@ module oyster_market::oyster_market_tests {
             metadata,
             provider,
             rate,
-            initial_payment,
+            usdc_coin,
             &clock,
             scenario.ctx()
         );
@@ -1760,9 +1785,11 @@ module oyster_market::oyster_market_tests {
         let admin = @0x1;
         let mut scenario = test_scenario::begin(admin);
 
+        market::test_market_init(scenario.ctx());
         lock::test_lock_init(scenario.ctx());
         scenario.next_tx(admin);
 
+        let mut config = scenario.take_shared<MarketConfig>();
         let mut lock_data = scenario.take_shared<LockData>();
         let rate_lock_selector = lock_selector(b"RATE_LOCK");
         let selectors: vector<vector<u8>> = vector[rate_lock_selector];
@@ -1770,15 +1797,14 @@ module oyster_market::oyster_market_tests {
 
         // Initialize the market config and marketplace
         market::initialize(
+            &mut config,
             &mut lock_data,
             admin,
             selectors,
-            lock_wait_times,
-            scenario.ctx()
+            lock_wait_times
         );
 
         scenario.next_tx(admin);
-        let mut config = scenario.take_shared<MarketConfig>();
         let mut marketplace = scenario.take_shared<Marketplace>();
 
         let cp = string::utf8(b"https://provider.example.com");
@@ -1796,9 +1822,6 @@ module oyster_market::oyster_market_tests {
 
         scenario.next_tx(admin);
 
-        // Create Option<Coin<USDC>> for initial_payment
-        let initial_payment: option::Option<Coin<USDC>> = option::some(usdc_coin);
-
         // Get clock and ctx from scenario
         let clock = clock::create_for_testing(scenario.ctx());
         market::job_open(
@@ -1806,7 +1829,7 @@ module oyster_market::oyster_market_tests {
             metadata,
             provider_addr,
             rate,
-            initial_payment,
+            usdc_coin,
             &clock,
             scenario.ctx()
         );

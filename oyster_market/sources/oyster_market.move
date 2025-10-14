@@ -28,6 +28,7 @@ module oyster_market::market {
     const E_RECIPIENT_NOT_ADMIN_ROLE: u64 = 110;
     const E_JOB_NON_ZERO_RATE: u64 = 111;
     const E_JOB_NO_REQUEST: u64 = 112;
+    const E_ALREADY_INITIALIZED: u64 = 113;
 
     // --- Constants ---
     const EXTRA_DECIMALS: u8 = 12; // 10^12
@@ -37,6 +38,7 @@ module oyster_market::market {
     // Shared object for market-wide configuration
     public struct MarketConfig has key {
         id: UID,
+        initialized: bool,
         admin_members: Table<address, bool>,
         providers: Table<address, Provider>,
     }
@@ -132,19 +134,11 @@ module oyster_market::market {
     }
 
     // --- Initialization ---
-    public fun initialize(
-        lock_data: &mut lock::LockData,
-        admin: address,
-        selectors: vector<vector<u8>>,
-        lock_wait_times: vector<u64>,
-        ctx: &mut TxContext
-    ) {
-        let mut admin_members = table::new(ctx);
-        table::add(&mut admin_members, admin, true);
-
+    fun init(ctx: &mut TxContext) {
         let config = MarketConfig {
             id: object::new(ctx),
-            admin_members,
+            initialized: false,
+            admin_members: table::new(ctx),
             providers: table::new(ctx),
         };
         transfer::share_object(config);
@@ -155,6 +149,19 @@ module oyster_market::market {
             jobs: table::new(ctx),
         };
         transfer::share_object(marketplace);
+    }
+
+    public fun initialize(
+        config: &mut MarketConfig,
+        lock_data: &mut lock::LockData,
+        admin: address,
+        selectors: vector<vector<u8>>,
+        lock_wait_times: vector<u64>
+    ) {
+        assert!(!config.initialized, E_ALREADY_INITIALIZED);
+        config.initialized = true;
+
+        table::add(&mut config.admin_members, admin, true);
         
         lock::update_lock_wait_times(
             lock_data,
@@ -218,17 +225,10 @@ module oyster_market::market {
 
     fun deposit(
         job: &mut Job,
-        payment_to_deposit: Option<Coin<USDC>>
+        payment_to_deposit: Coin<USDC>
     ): u64 {
-        let mut payment_amount = 0;
-
-        if (option::is_some(&payment_to_deposit)) {
-            let coin = option::destroy_some(payment_to_deposit);
-            payment_amount = coin::value(&coin);
-            balance::join(&mut job.balance, coin::into_balance(coin));
-        } else {
-            option::destroy_none(payment_to_deposit);
-        };
+        let payment_amount = coin::value(&payment_to_deposit);
+        balance::join(&mut job.balance, coin::into_balance(payment_to_deposit));
 
         return payment_amount
     }
@@ -330,7 +330,7 @@ module oyster_market::market {
         metadata: String,
         provider: address,
         rate: u64, // rate per millisecond
-        initial_payment: Option<Coin<USDC>>,
+        initial_payment: Coin<USDC>,
         clock: &Clock,
         ctx: &mut TxContext
     ) {
@@ -419,19 +419,17 @@ module oyster_market::market {
     public fun job_deposit(
         marketplace: &mut Marketplace,
         job_id: u128,
-        payment_to_deposit: Option<Coin<USDC>>,
+        payment_to_deposit: Coin<USDC>,
         ctx: &mut TxContext,
     ) {
         let job = table::borrow_mut(&mut marketplace.jobs, job_id);
 
         let amount = deposit(job, payment_to_deposit);
-        if (amount > 0) {
-            event::emit(JobDeposited {
-                job_id: job.job_id,
-                from: tx_context::sender(ctx),
-                amount: amount
-            });
-        };
+        event::emit(JobDeposited {
+            job_id: job.job_id,
+            from: tx_context::sender(ctx),
+            amount: amount
+        });
     }
 
     public fun job_withdraw(
@@ -570,6 +568,11 @@ module oyster_market::market {
     }
 
     // --- Tests ---
+    #[test_only]
+    public fun test_market_init(ctx: &mut TxContext) {
+        init(ctx);
+    }
+
     #[test_only]
     public fun provider_cp(config: &MarketConfig, provider_addr: address): Option<String> {
         if(table::contains(&config.providers, provider_addr)) {
