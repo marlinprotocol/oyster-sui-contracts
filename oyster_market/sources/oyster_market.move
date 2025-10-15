@@ -567,13 +567,6 @@ module oyster_market::market {
         sui::hash::keccak256(&bytes)                      // returns 32-byte vector<u8>
     }
 
-    // --- Tests ---
-    #[test_only]
-    public fun test_market_init(ctx: &mut TxContext) {
-        init(ctx);
-    }
-
-    #[test_only]
     public fun provider_cp(config: &MarketConfig, provider_addr: address): Option<String> {
         if(table::contains(&config.providers, provider_addr)) {
             let provider = table::borrow(&config.providers, provider_addr);
@@ -583,7 +576,6 @@ module oyster_market::market {
         }
     }
 
-    #[test_only]
     public fun job_data(marketplace: &Marketplace, job_id: u128): (
         u128, String, address, address, u64, u64, u64
     ) {
@@ -599,19 +591,26 @@ module oyster_market::market {
         )
     }
 
-    #[test_only]
     public fun job_exists(marketplace: &Marketplace, job_id: u128): bool {
         table::contains(&marketplace.jobs, job_id)
     }
 
-    #[test_only]
     public fun has_admin_role(config: &MarketConfig, user: address): bool {
         table::contains(&config.admin_members, user)
     }
 
-    #[test_only]
     public fun current_job_index(marketplace: &Marketplace): u128 {
         marketplace.job_index
+    }
+
+    public fun extra_decimals(): u8 {
+        EXTRA_DECIMALS
+    }
+
+    // --- Tests ---
+    #[test_only]
+    public fun test_market_init(ctx: &mut TxContext) {
+        init(ctx);
     }
 
 }
