@@ -5,11 +5,10 @@ edition = "2024.beta" # edition = "legacy" to use legacy (pre-2024) Move
 [dependencies]
 # For remote import, use the `{ git = "...", subdir = "...", rev = "..." }`.
 Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "framework/testnet", override = true }
+usdc = { git = "https://github.com/circlefin/stablecoin-sui.git", subdir = "packages/usdc", rev = "master" }
 
 # For local dependencies use `local = path`. Path is relative to the package root
-usdc = {local = "../usdc"}
+# usdc = {local = "../usdc"}
 
 [addresses]
-# Localnet
-oyster_market = "0x37e801b3582a49c8868ef477421bfcd70b1ba85e778c96990dd42ace738cb072"
-usdc = "0xf957d907ebb6c264d1f9145627a0ffdac92d0fb882c027995737a07a40341889"
+oyster_market = "0x0"

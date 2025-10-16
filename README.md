@@ -1,5 +1,17 @@
 Oyster Sui Contracts
 
+v1-
+
+Sui Testnet-
+Market package id(old) - 0xfde574649f0d7ee2d362d13fda4783132bda4559fea8b1dd1321d0a80ecd0922
+updated - 0xfffae8810573ebde8ad360f2c04714d206a6a7f432fd14c492c50527bd531d0d
+marketplace - 0x8eeb17064aef18de70bd6feb0d636c7faea3ac1060322ff1d1fe320f80c5e745
+market config - 0x5a98d3b00fdd0bf18487b4a77e59cd0038a7f993d1154e3329fedcae1424bc42
+lock data - 0x338c9c9b359e1454c21f55cf6ffad12e4848f223e45061d8664a5723dfae0794
+upgrade cap - 0x88f1832ef743b48a8dfee23a0db70ccc3bbac5fa409be626b088fdd9bf0ac637
+
+v2-
+
 usdc = "0xf957d907ebb6c264d1f9145627a0ffdac92d0fb882c027995737a07a40341889"
 oyster_credits = "0x13c6748cd7a70ea4da72e35be4017c572b1bb2d2c03c2b2c350e5e13956528cd"
 oyster_market = "0x591bea05bb1bf3e1c67fafa9fafc5c67eef3e989d3f0519882c30392cf7502f7"

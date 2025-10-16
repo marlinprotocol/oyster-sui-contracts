@@ -5,6 +5,8 @@ module oyster_market::lock {
     use sui::hash;
     use sui::table::{Self, Table};
 
+    const VERSION: u64 = 1;
+
     /// ------------------------------------------------------------------------
     /// Types
     /// ------------------------------------------------------------------------
@@ -17,6 +19,7 @@ module oyster_market::lock {
     /// Shared state that holds all locks and selector wait times.
     public struct LockData has key {
         id: UID,
+        version: u64,
         /// lock_id (keccak256(selector || key)) -> Lock
         locks: Table<vector<u8>, Lock>,
         /// selector -> wait time in milliseconds
@@ -49,6 +52,8 @@ module oyster_market::lock {
     const E_LOCK_LENGTH_MISMATCH: u64 = 0;
     const E_LOCK_SHOULD_BE_NONE: u64 = 1;
     const E_LOCK_SHOULD_BE_UNLOCKED: u64 = 2;
+    const E_WRONG_VERSION: u64 = 3;
+    const E_NOT_UPGRADE: u64 = 4;
 
     /// Lock status enum like Solidity. 0=None, 1=Unlocked, 2=Locked
     public enum LockStatus has drop { 
@@ -63,6 +68,7 @@ module oyster_market::lock {
     fun init(ctx: &mut TxContext) {
         let lock_data = LockData {
             id: object::new(ctx),
+            version: VERSION,
             locks: table::new<vector<u8>, Lock>(ctx),
             lock_wait_times: table::new<vector<u8>, u64>(ctx)
         };
@@ -87,6 +93,10 @@ module oyster_market::lock {
         clock::timestamp_ms(clock)
     }
 
+    fun assert_version(obj_version: u64) {
+        assert!(obj_version == VERSION, E_WRONG_VERSION);
+    }
+
     /// ------------------------------------------------------------------------
     /// Read ("view")
     /// ------------------------------------------------------------------------
@@ -94,6 +104,7 @@ module oyster_market::lock {
         lock_data: &LockData,
         selector: vector<u8>
     ): u64 {
+        assert_version(lock_data.version);
         if (table::contains(&lock_data.lock_wait_times, selector)) {
             *table::borrow(&lock_data.lock_wait_times, selector)
         } else { 0 }
@@ -124,6 +135,7 @@ module oyster_market::lock {
         i_value: u256,
         clock: &Clock
     ): u64 {
+        assert_version(lock_data.version);
         let status = lock_status(lock_data, &selector, &key, clock);
         assert!(status == LockStatus::None, E_LOCK_SHOULD_BE_NONE);
 
@@ -141,6 +153,7 @@ module oyster_market::lock {
         selector: vector<u8>,
         key: vector<u8>
     ): u256 {
+        assert_version(lock_data.version);
         let id = lock_id(&selector, &key);
         if(table::contains(&lock_data.locks, id)) {
             let l = table::remove(&mut lock_data.locks, id);
@@ -156,6 +169,7 @@ module oyster_market::lock {
         key: vector<u8>,
         clock: &Clock,
     ): u256 {
+        assert_version(lock_data.version);
         let status = lock_status(lock_data, &selector, &key, clock);
         assert!(status == LockStatus::Unlocked, E_LOCK_SHOULD_BE_UNLOCKED);
         revert_lock(lock_data, selector, key)
@@ -167,6 +181,7 @@ module oyster_market::lock {
         from_key: vector<u8>,
         to_key: vector<u8>
     ) {
+        assert_version(lock_data.version);
         let from_id = lock_id(&selector, &from_key);
         let to_id   = lock_id(&selector, &to_key);
         let src = *table::borrow(&lock_data.locks, from_id);
@@ -207,6 +222,7 @@ module oyster_market::lock {
         selectors: vector<vector<u8>>,
         new_waits_ms: vector<u64>
     ) {
+        assert_version(lock_data.version);
         let len = vector::length(&selectors);
         assert!(len == vector::length(&new_waits_ms), E_LOCK_LENGTH_MISMATCH);
         let mut i = 0;
@@ -216,6 +232,15 @@ module oyster_market::lock {
             update_lock_wait_time(lock_data, selector, wait_time);
             i = i + 1;
         }
+    }
+
+    // to be called via market when the package is upgraded
+    public(package) fun migrate(
+        lock_data: &mut LockData
+    ) {
+        assert!(lock_data.version < VERSION, E_NOT_UPGRADE);
+
+        lock_data.version = VERSION;
     }
 
     // --- Tests ---

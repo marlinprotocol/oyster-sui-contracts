@@ -13,6 +13,8 @@ module oyster_market::market {
     use sui::bcs;
     use sui::hash;
 
+    const VERSION: u64 = 1;
+
     const ADMIN_ROLE: u8 = 1;
 
     // --- Error Constants ---
@@ -29,6 +31,8 @@ module oyster_market::market {
     const E_JOB_NON_ZERO_RATE: u64 = 111;
     const E_JOB_NO_REQUEST: u64 = 112;
     const E_ALREADY_INITIALIZED: u64 = 113;
+    const E_WRONG_VERSION: u64 = 114;
+    const E_NOT_UPGRADE: u64 = 115;
 
     // --- Constants ---
     const EXTRA_DECIMALS: u8 = 12; // 10^12
@@ -38,6 +42,7 @@ module oyster_market::market {
     // Shared object for market-wide configuration
     public struct MarketConfig has key {
         id: UID,
+        version: u64,
         initialized: bool,
         admin_members: Table<address, bool>,
         providers: Table<address, Provider>,
@@ -46,6 +51,7 @@ module oyster_market::market {
     // Shared object to act as a central registry for all jobs
     public struct Marketplace has key {
         id: UID,
+        version: u64,
         job_index: u128, // Incrementing job ID counter
         jobs: Table<u128, Job>,
     }
@@ -137,6 +143,7 @@ module oyster_market::market {
     fun init(ctx: &mut TxContext) {
         let config = MarketConfig {
             id: object::new(ctx),
+            version: VERSION,
             initialized: false,
             admin_members: table::new(ctx),
             providers: table::new(ctx),
@@ -145,6 +152,7 @@ module oyster_market::market {
 
         let marketplace = Marketplace {
             id: object::new(ctx),
+            version: VERSION,
             job_index: 0,
             jobs: table::new(ctx),
         };
@@ -169,6 +177,10 @@ module oyster_market::market {
             lock_wait_times
         );
     }
+
+    fun assert_version(obj_version: u64) {
+        assert!(obj_version == VERSION, E_WRONG_VERSION);
+    }
     
     // --- Admin Functions ---
     fun assert_admin(config: &MarketConfig, ctx: &TxContext) {
@@ -176,6 +188,7 @@ module oyster_market::market {
     }
 
     public fun add_admin_member(config: &mut MarketConfig, member: address, ctx: &TxContext) {
+        assert_version(config.version);
         assert_admin(config, ctx);
         assert!(!table::contains(&config.admin_members, member), E_ALREADY_HAS_ADMIN_ROLE);
         table::add(&mut config.admin_members, member, true);
@@ -183,6 +196,7 @@ module oyster_market::market {
     }
 
     public fun remove_admin_member(config: &mut MarketConfig, member: address, ctx: &TxContext) {
+        assert_version(config.version);
         assert_admin(config, ctx);
         assert!(table::contains(&config.admin_members, member), E_RECIPIENT_NOT_ADMIN_ROLE);
         table::remove(&mut config.admin_members, member);
@@ -191,6 +205,7 @@ module oyster_market::market {
     
     // --- Provider Management ---
     public fun provider_add(config: &mut MarketConfig, cp: String, ctx: &mut TxContext) {
+        assert_version(config.version);
         let provider_addr = tx_context::sender(ctx);
         assert!(!table::contains(&config.providers, provider_addr), E_PROVIDER_ALREADY_EXISTS);
         assert!(string::length(&cp) > 0, E_INVALID_PROVIDER_CP);
@@ -200,6 +215,7 @@ module oyster_market::market {
     }
     
     public fun provider_remove(config: &mut MarketConfig, ctx: &mut TxContext) {
+        assert_version(config.version);
         let provider_addr = tx_context::sender(ctx);
         assert!(table::contains(&config.providers, provider_addr), E_PROVIDER_NOT_FOUND);
         
@@ -208,6 +224,7 @@ module oyster_market::market {
     }
 
     public fun provider_update_cp(config: &mut MarketConfig, new_cp: String, ctx: &TxContext) {
+        assert_version(config.version);
         let provider_addr = tx_context::sender(ctx);
         assert!(string::length(&new_cp) > 0, E_INVALID_PROVIDER_CP);
         let provider = table::borrow_mut(&mut config.providers, provider_addr);
@@ -334,6 +351,7 @@ module oyster_market::market {
         clock: &Clock,
         ctx: &mut TxContext
     ) {
+        assert_version(marketplace.version);
         let owner = tx_context::sender(ctx);
         let payment_balance = balance::zero<USDC>();
         let job_id = marketplace.job_index;
@@ -376,6 +394,7 @@ module oyster_market::market {
         clock: &Clock,
         ctx: &mut TxContext
     ) {
+        assert_version(marketplace.version);
         let job = table::borrow_mut(&mut marketplace.jobs, job_id);
         settle_job(job, clock, ctx);
     }
@@ -387,6 +406,7 @@ module oyster_market::market {
         clock: &Clock,
         ctx: &mut TxContext
     ) {
+        assert_version(marketplace.version);
         let job = table::borrow_mut(&mut marketplace.jobs, job_id);
         assert!(job.owner == tx_context::sender(ctx), E_ONLY_JOB_OWNER);
         
@@ -422,6 +442,7 @@ module oyster_market::market {
         payment_to_deposit: Coin<USDC>,
         ctx: &mut TxContext,
     ) {
+        assert_version(marketplace.version);
         let job = table::borrow_mut(&mut marketplace.jobs, job_id);
 
         let amount = deposit(job, payment_to_deposit);
@@ -440,6 +461,7 @@ module oyster_market::market {
         clock: &Clock,
         ctx: &mut TxContext
     ) {
+        assert_version(marketplace.version);
         assert!(amount > 0, E_INVALID_AMOUNT);
         let job = table::borrow_mut(&mut marketplace.jobs, job_id);
         let sender = tx_context::sender(ctx);
@@ -476,6 +498,7 @@ module oyster_market::market {
         clock: &Clock,
         ctx: &mut TxContext,
     ) {
+        assert_version(marketplace.version);
         let job = table::borrow_mut(&mut marketplace.jobs, job_id);
         let sender = tx_context::sender(ctx);
         assert!(job.owner == sender, E_ONLY_JOB_OWNER);
@@ -498,6 +521,7 @@ module oyster_market::market {
         clock: &Clock,
         ctx: &mut TxContext,
     ) {
+        assert_version(marketplace.version);
         let job = table::borrow_mut(&mut marketplace.jobs, job_id);
         let sender = tx_context::sender(ctx);
         assert!(job.owner == sender, E_ONLY_JOB_OWNER);
@@ -521,6 +545,7 @@ module oyster_market::market {
         clock: &Clock,
         ctx: &mut TxContext,
     ) {
+        assert_version(marketplace.version);
         let job = table::borrow_mut(&mut marketplace.jobs, job_id);
         let sender = tx_context::sender(ctx);
         assert!(job.owner == sender, E_ONLY_JOB_OWNER);
@@ -545,6 +570,7 @@ module oyster_market::market {
         new_metadata: String,
         ctx: &TxContext,
     ) {
+        assert_version(marketplace.version);
         let job = table::borrow_mut(&mut marketplace.jobs, job_id);
 
         // Check that the caller is the owner of the job.
@@ -560,6 +586,23 @@ module oyster_market::market {
             new_metadata: job.metadata // Pass the new value to the event
         });
     }
+
+    // // to be called when the package is upgraded
+    // entry fun migrate(
+    //     config: &mut MarketConfig,
+    //     marketplace: &mut Marketplace,
+    //     lock_data: &mut lock::LockData,
+    //     ctx: &TxContext
+    // ) {
+    //     assert_admin(config, ctx);
+    //     assert!(config.version < VERSION, E_NOT_UPGRADE);
+    //     assert!(marketplace.version < VERSION, E_NOT_UPGRADE);
+
+    //     config.version = VERSION;
+    //     marketplace.version = VERSION;
+
+    //     lock::migrate(lock_data);
+    // }
 
     public fun rate_lock_selector(): vector<u8> {
         let s = string::utf8(b"RATE_LOCK");      // create string
