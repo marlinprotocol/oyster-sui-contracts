@@ -1,0 +1,14 @@
+[package]
+name = "oyster_market"
+edition = "2024.beta" # edition = "legacy" to use legacy (pre-2024) Move
+
+[dependencies]
+# For remote import, use the `{ git = "...", subdir = "...", rev = "..." }`.
+Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "framework/testnet", override = true }
+usdc = { git = "https://github.com/circlefin/stablecoin-sui.git", subdir = "packages/usdc", rev = "master" }
+
+# For local dependencies use `local = path`. Path is relative to the package root
+# usdc = {local = "../usdc"}
+
+[addresses]
+oyster_market = "0x0"
