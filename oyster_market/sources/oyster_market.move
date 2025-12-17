@@ -69,8 +69,8 @@ module oyster_market::market {
         metadata: String,
         owner: address,
         provider: address,
-        rate: u64, // rate per millisecond
-        last_settled_ms: u64, // timestamp in milliseconds
+        rate: u64, // rate per second
+        last_settled: u64, // timestamp in seconds
         // Each job is its own vault
         balance: Balance<USDC>
     }
@@ -112,7 +112,7 @@ module oyster_market::market {
     public struct JobSettled has copy, drop {
         job_id: u128,
         amount: u64,
-        settled_until_ms: u64,
+        settled_until: u64,
     }
     public struct JobMetadataUpdated has copy, drop {
         job_id: u128,
@@ -270,11 +270,11 @@ module oyster_market::market {
         clock: &Clock,
         ctx: &mut TxContext
     ) {
-        let current_time = clock::timestamp_ms(clock);
+        let current_time = clock::timestamp_ms(clock) / 1000;
 
-        let usage_duration_ms = current_time - job.last_settled_ms;
+        let usage_duration = current_time - job.last_settled;
         let pow = u128::pow(10, EXTRA_DECIMALS);
-        let amount_used_u128 = ((job.rate as u128) * (usage_duration_ms as u128) + (pow - 1) ) / pow;
+        let amount_used_u128 = ((job.rate as u128) * (usage_duration as u128) + (pow - 1) ) / pow;
         let mut amount_used = amount_used_u128 as u64;
 
         let balance = balance::value(&job.balance);
@@ -285,11 +285,11 @@ module oyster_market::market {
         let to = job.provider;
         withdraw(job, to, amount_used, ctx);
 
-        job.last_settled_ms = current_time;
+        job.last_settled = current_time;
         event::emit(JobSettled { 
             job_id: job.job_id,
             amount: amount_used,
-            settled_until_ms: current_time
+            settled_until: current_time
         });
     }
 
@@ -317,7 +317,7 @@ module oyster_market::market {
             owner:_,
             provider:_,
             rate:_,
-            last_settled_ms:_,
+            last_settled:_,
             balance,
         } = closed_job;
         balance::destroy_zero(balance);
@@ -346,7 +346,7 @@ module oyster_market::market {
         marketplace: &mut Marketplace,
         metadata: String,
         provider: address,
-        rate: u64, // rate per millisecond
+        rate: u64, // rate per second
         initial_payment: Coin<USDC>,
         clock: &Clock,
         ctx: &mut TxContext
@@ -355,7 +355,7 @@ module oyster_market::market {
         let owner = tx_context::sender(ctx);
         let payment_balance = balance::zero<USDC>();
         let job_id = marketplace.job_index;
-        let current_time = clock::timestamp_ms(clock);
+        let current_time = clock::timestamp_ms(clock) / 1000;
 
         let job = Job {
             id: object::new(ctx),
@@ -364,7 +364,7 @@ module oyster_market::market {
             owner,
             provider,
             rate,
-            last_settled_ms: current_time,
+            last_settled: current_time,
             balance: payment_balance
         };
 
@@ -470,7 +470,7 @@ module oyster_market::market {
         // Settle before withdrawal to ensure balances are up-to-date
         settle_job(job, clock, ctx);
 
-        let lock_wait_time = lock::lock_wait_time_ms(lock_data, rate_lock_selector());
+        let lock_wait_time = lock::lock_wait_time(lock_data, rate_lock_selector());
         let pow = u128::pow(10, EXTRA_DECIMALS);
         let leftover_u128 = ((job.rate as u128) * (lock_wait_time as u128) + (pow - 1)) / pow;
         let leftover = leftover_u128 as u64;
@@ -629,7 +629,7 @@ module oyster_market::market {
             job.owner,
             job.provider,
             job.rate,
-            job.last_settled_ms,
+            job.last_settled,
             job.balance.value()
         )
     }

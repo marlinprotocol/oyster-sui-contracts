@@ -31,7 +31,7 @@ module oyster_market::oyster_market_tests {
         let mut lock_data = scenario.take_shared<LockData>();
         let rate_lock_selector = lock_selector(b"RATE_LOCK");
         let selectors: vector<vector<u8>> = vector[rate_lock_selector];
-        let lock_wait_times = vector[1000];
+        let lock_wait_times = vector[1];
 
         // Initialize the market config and marketplace
         market::initialize(
@@ -75,7 +75,7 @@ module oyster_market::oyster_market_tests {
         let mut lock_data = scenario.take_shared<LockData>();
         let rate_lock_selector = lock_selector(b"RATE_LOCK");
         let selectors: vector<vector<u8>> = vector[rate_lock_selector];
-        let lock_wait_times = vector[1000];
+        let lock_wait_times = vector[1];
 
         // Initialize the market config and marketplace
         market::initialize(
@@ -125,7 +125,7 @@ module oyster_market::oyster_market_tests {
         let mut lock_data = scenario.take_shared<LockData>();
         let rate_lock_selector = lock_selector(b"RATE_LOCK");
         let selectors: vector<vector<u8>> = vector[rate_lock_selector];
-        let lock_wait_times = vector[1000];
+        let lock_wait_times = vector[1];
 
         // Initialize the market config and marketplace
         market::initialize(
@@ -175,7 +175,7 @@ module oyster_market::oyster_market_tests {
         let mut lock_data = scenario.take_shared<LockData>();
         let rate_lock_selector = lock_selector(b"RATE_LOCK");
         let selectors: vector<vector<u8>> = vector[rate_lock_selector];
-        let lock_wait_times = vector[1000];
+        let lock_wait_times = vector[1];
 
         // Initialize the market config and marketplace
         market::initialize(
@@ -232,7 +232,7 @@ module oyster_market::oyster_market_tests {
         let mut lock_data = scenario.take_shared<LockData>();
         let rate_lock_selector = lock_selector(b"RATE_LOCK");
         let selectors: vector<vector<u8>> = vector[rate_lock_selector];
-        let lock_wait_times = vector[1000];
+        let lock_wait_times = vector[1];
 
         // Initialize the market config and marketplace
         market::initialize(
@@ -283,7 +283,7 @@ module oyster_market::oyster_market_tests {
         let mut lock_data = scenario.take_shared<LockData>();
         let rate_lock_selector = lock_selector(b"RATE_LOCK");
         let selectors: vector<vector<u8>> = vector[rate_lock_selector];
-        let lock_wait_times = vector[1000];
+        let lock_wait_times = vector[1];
 
         // Initialize the market config and marketplace
         market::initialize(
@@ -340,7 +340,7 @@ module oyster_market::oyster_market_tests {
                 j_owner,
                 j_provider,
                 j_rate,
-                j_last_settled_ms,
+                j_last_settled,
                 j_balance,
             ) = market::job_data(&marketplace, job_id);
 
@@ -353,8 +353,8 @@ module oyster_market::oyster_market_tests {
             assert!(j_rate == rate);
             assert!(j_balance == usdc_amount);
             assert!(
-                j_last_settled_ms >= clock.timestamp_ms() && 
-                j_last_settled_ms <= clock.timestamp_ms() + 1
+                j_last_settled >= clock.timestamp_ms() / 1000 && 
+                j_last_settled <= clock.timestamp_ms() / 1000 + 1
             );
         };
 
@@ -378,7 +378,7 @@ module oyster_market::oyster_market_tests {
         let mut lock_data = scenario.take_shared<LockData>();
         let rate_lock_selector = lock_selector(b"RATE_LOCK");
         let selectors: vector<vector<u8>> = vector[rate_lock_selector];
-        let lock_wait_times = vector[1000];
+        let lock_wait_times = vector[1];
 
         // Initialize the market config and marketplace
         market::initialize(
@@ -425,8 +425,7 @@ module oyster_market::oyster_market_tests {
 
         // settle job
         scenario.next_tx(admin);
-        // Advance the clock by notice_period_ms + 10
-        // clock::set_for_testing(&mut clock, clock.timestamp_ms() + 1000);
+        // Advance the clock by notice period + a little buffer (milliseconds)
         clock::increment_for_testing(&mut clock, 1000);
 
         market::job_settle(
@@ -445,11 +444,11 @@ module oyster_market::oyster_market_tests {
                 j_owner,
                 j_provider,
                 j_rate,
-                j_last_settled_ms,
+                j_last_settled,
                 j_balance
             ) = market::job_data(&marketplace, job_id);
 
-            let amount_used = calculate_amount_to_pay(rate, 1000);
+            let amount_used = calculate_amount_to_pay(rate, 1);
 
             assert!(j_job_id == job_id);
             assert!(j_metadata == metadata);
@@ -457,7 +456,7 @@ module oyster_market::oyster_market_tests {
             assert!(j_provider == provider_addr);
             assert!(j_rate == rate);
             assert!(j_balance == usdc_amount - amount_used);
-            assert!(j_last_settled_ms >= clock.timestamp_ms() && j_last_settled_ms <= clock.timestamp_ms() + 1);
+            assert!(j_last_settled >= clock.timestamp_ms() / 1000 && j_last_settled <= clock.timestamp_ms() / 1000 + 1);
         };
 
         test_scenario::return_shared(lock_data);
@@ -480,7 +479,7 @@ module oyster_market::oyster_market_tests {
         let mut lock_data = scenario.take_shared<LockData>();
         let rate_lock_selector = lock_selector(b"RATE_LOCK");
         let selectors: vector<vector<u8>> = vector[rate_lock_selector];
-        let lock_wait_times = vector[1000];
+        let lock_wait_times = vector[1];
 
         // Initialize the market config and marketplace
         market::initialize(
@@ -521,7 +520,7 @@ module oyster_market::oyster_market_tests {
             &clock,
             scenario.ctx()
         );
-        let time = clock::timestamp_ms(&clock);
+        let time = clock::timestamp_ms(&clock) / 1000;
 
         // deposit more usdc
         let job_id = 0;
@@ -545,7 +544,7 @@ module oyster_market::oyster_market_tests {
                 j_owner,
                 j_provider,
                 j_rate,
-                j_last_settled_ms,
+                j_last_settled,
                 j_balance
             ) = market::job_data(&marketplace, job_id);
 
@@ -556,8 +555,8 @@ module oyster_market::oyster_market_tests {
             assert!(j_rate == rate);
             assert!(j_balance == usdc_amount + deposit_amount);
             assert!(
-                j_last_settled_ms >= time && 
-                j_last_settled_ms <= time + 1
+                j_last_settled >= time && 
+                j_last_settled <= time + 1
             );
         };
 
@@ -582,7 +581,7 @@ module oyster_market::oyster_market_tests {
         let mut lock_data = scenario.take_shared<LockData>();
         let rate_lock_selector = lock_selector(b"RATE_LOCK");
         let selectors: vector<vector<u8>> = vector[rate_lock_selector];
-        let lock_wait_times = vector[1000];
+        let lock_wait_times = vector[1];
 
         // Initialize the market config and marketplace
         market::initialize(
@@ -646,11 +645,11 @@ module oyster_market::oyster_market_tests {
                 j_owner,
                 j_provider,
                 j_rate,
-                j_last_settled_ms,
+                j_last_settled,
                 j_balance
             ) = market::job_data(&marketplace, job_id);
 
-            let amount_used = calculate_amount_to_pay(rate, 1000);
+            let amount_used = calculate_amount_to_pay(rate, 1);
 
             assert!(j_job_id == job_id);
             assert!(j_metadata == metadata);
@@ -659,8 +658,8 @@ module oyster_market::oyster_market_tests {
             assert!(j_rate == rate);
             assert!(j_balance == usdc_amount - amount_used - withdrawal_amount);
             assert!(
-                j_last_settled_ms >= clock::timestamp_ms(&clock) && 
-                j_last_settled_ms <= clock::timestamp_ms(&clock) + 1
+                j_last_settled >= clock::timestamp_ms(&clock) / 1000 && 
+                j_last_settled <= clock::timestamp_ms(&clock) / 1000 + 1
             );
 
             let provider_usdc_bal = scenario.take_from_address<Coin<USDC>>(provider);
@@ -694,7 +693,7 @@ module oyster_market::oyster_market_tests {
         let mut lock_data = scenario.take_shared<LockData>();
         let rate_lock_selector = lock_selector(b"RATE_LOCK");
         let selectors: vector<vector<u8>> = vector[rate_lock_selector];
-        let lock_wait_times = vector[1000];
+        let lock_wait_times = vector[1];
 
         // Initialize the market config and marketplace
         market::initialize(
@@ -775,7 +774,7 @@ module oyster_market::oyster_market_tests {
         let mut lock_data = scenario.take_shared<LockData>();
         let rate_lock_selector = lock_selector(b"RATE_LOCK");
         let selectors: vector<vector<u8>> = vector[rate_lock_selector];
-        let lock_wait_times = vector[1000];
+        let lock_wait_times = vector[1];
 
         // Initialize the market config and marketplace
         market::initialize(
@@ -851,7 +850,7 @@ module oyster_market::oyster_market_tests {
         let mut lock_data = scenario.take_shared<LockData>();
         let rate_lock_selector = lock_selector(b"RATE_LOCK");
         let selectors: vector<vector<u8>> = vector[rate_lock_selector];
-        let lock_wait_times = vector[1000];
+        let lock_wait_times = vector[1];
 
         // Initialize the market config and marketplace
         market::initialize(
@@ -938,7 +937,7 @@ module oyster_market::oyster_market_tests {
         let mut lock_data = scenario.take_shared<LockData>();
         let rate_lock_selector = lock_selector(b"RATE_LOCK");
         let selectors: vector<vector<u8>> = vector[rate_lock_selector];
-        let lock_wait_times = vector[1000];
+        let lock_wait_times = vector[1];
 
         // Initialize the market config and marketplace
         market::initialize(
@@ -1018,7 +1017,7 @@ module oyster_market::oyster_market_tests {
         let mut lock_data = scenario.take_shared<LockData>();
         let rate_lock_selector = lock_selector(b"RATE_LOCK");
         let selectors: vector<vector<u8>> = vector[rate_lock_selector];
-        let lock_wait_times = vector[1000];
+        let lock_wait_times = vector[1];
 
         // Initialize the market config and marketplace
         market::initialize(
@@ -1087,7 +1086,7 @@ module oyster_market::oyster_market_tests {
         let mut lock_data = scenario.take_shared<LockData>();
         let rate_lock_selector = lock_selector(b"RATE_LOCK");
         let selectors: vector<vector<u8>> = vector[rate_lock_selector];
-        let lock_wait_times = vector[1000];
+        let lock_wait_times = vector[1];
 
         // Initialize the market config and marketplace
         market::initialize(
@@ -1141,7 +1140,7 @@ module oyster_market::oyster_market_tests {
         );
 
         scenario.next_tx(admin);
-        clock::increment_for_testing(&mut clock, 1100);
+        clock::increment_for_testing(&mut clock, 2000);
 
         market::job_revise_rate_finalize(
             &mut marketplace, &mut lock_data, job_id, &clock, scenario.ctx()
@@ -1161,11 +1160,11 @@ module oyster_market::oyster_market_tests {
                 j_owner,
                 j_provider,
                 j_rate,
-                j_last_settled_ms,
+                j_last_settled,
                 j_balance
             ) = market::job_data(&marketplace, job_id);
 
-            let amount_used = calculate_amount_to_pay(rate, 1100);
+            let amount_used = calculate_amount_to_pay(rate, 2);
 
             assert!(j_job_id == job_id);
             assert!(j_metadata == metadata);
@@ -1174,8 +1173,8 @@ module oyster_market::oyster_market_tests {
             assert!(j_rate == new_rate);
             assert!(j_balance == usdc_amount - amount_used);
             assert!(
-                j_last_settled_ms >= clock::timestamp_ms(&clock) && 
-                j_last_settled_ms <= clock::timestamp_ms(&clock) + 1
+                j_last_settled >= clock::timestamp_ms(&clock) / 1000 && 
+                j_last_settled <= clock::timestamp_ms(&clock) / 1000 + 1
             );
 
             let provider_usdc_bal = scenario.take_from_address<Coin<USDC>>(provider);
@@ -1206,7 +1205,7 @@ module oyster_market::oyster_market_tests {
         let mut lock_data = scenario.take_shared<LockData>();
         let rate_lock_selector = lock_selector(b"RATE_LOCK");
         let selectors: vector<vector<u8>> = vector[rate_lock_selector];
-        let lock_wait_times = vector[1000];
+        let lock_wait_times = vector[1];
 
         // Initialize the market config and marketplace
         market::initialize(
@@ -1286,7 +1285,7 @@ module oyster_market::oyster_market_tests {
         let mut lock_data = scenario.take_shared<LockData>();
         let rate_lock_selector = lock_selector(b"RATE_LOCK");
         let selectors: vector<vector<u8>> = vector[rate_lock_selector];
-        let lock_wait_times = vector[1000];
+        let lock_wait_times = vector[1];
 
         // Initialize the market config and marketplace
         market::initialize(
@@ -1366,7 +1365,7 @@ module oyster_market::oyster_market_tests {
         let mut lock_data = scenario.take_shared<LockData>();
         let rate_lock_selector = lock_selector(b"RATE_LOCK");
         let selectors: vector<vector<u8>> = vector[rate_lock_selector];
-        let lock_wait_times = vector[1000];
+        let lock_wait_times = vector[1];
 
         // Initialize the market config and marketplace
         market::initialize(
@@ -1448,7 +1447,7 @@ module oyster_market::oyster_market_tests {
         let mut lock_data = scenario.take_shared<LockData>();
         let rate_lock_selector = lock_selector(b"RATE_LOCK");
         let selectors: vector<vector<u8>> = vector[rate_lock_selector];
-        let lock_wait_times = vector[1000];
+        let lock_wait_times = vector[1];
 
         // Initialize the market config and marketplace
         market::initialize(
@@ -1502,7 +1501,7 @@ module oyster_market::oyster_market_tests {
         );
 
         // go past the lock wait time to unlock the rate lock
-        clock::increment_for_testing(&mut clock, 1100);
+        clock::increment_for_testing(&mut clock, 2000);
         scenario.next_tx(admin);
 
         market::job_close(
@@ -1518,7 +1517,7 @@ module oyster_market::oyster_market_tests {
             let job_exists = market::job_exists(&marketplace, job_id);
             assert!(!job_exists);
 
-            let amount_used = calculate_amount_to_pay(rate, 1100);
+            let amount_used = calculate_amount_to_pay(rate, 2);
 
             let provider_bal = scenario.take_from_address<Coin<USDC>>(provider);
             assert!(provider_bal.value() == amount_used);
@@ -1551,7 +1550,7 @@ module oyster_market::oyster_market_tests {
         let mut lock_data = scenario.take_shared<LockData>();
         let rate_lock_selector = lock_selector(b"RATE_LOCK");
         let selectors: vector<vector<u8>> = vector[rate_lock_selector];
-        let lock_wait_times = vector[1000];
+        let lock_wait_times = vector[1];
 
         // Initialize the market config and marketplace
         market::initialize(
@@ -1624,7 +1623,7 @@ module oyster_market::oyster_market_tests {
         let mut lock_data = scenario.take_shared<LockData>();
         let rate_lock_selector = lock_selector(b"RATE_LOCK");
         let selectors: vector<vector<u8>> = vector[rate_lock_selector];
-        let lock_wait_times = vector[1000];
+        let lock_wait_times = vector[1];
 
         // Initialize the market config and marketplace
         market::initialize(
@@ -1707,7 +1706,7 @@ module oyster_market::oyster_market_tests {
         let mut lock_data = scenario.take_shared<LockData>();
         let rate_lock_selector = lock_selector(b"RATE_LOCK");
         let selectors: vector<vector<u8>> = vector[rate_lock_selector];
-        let lock_wait_times = vector[1000];
+        let lock_wait_times = vector[1];
 
         // Initialize the market config and marketplace
         market::initialize(
@@ -1793,7 +1792,7 @@ module oyster_market::oyster_market_tests {
         let mut lock_data = scenario.take_shared<LockData>();
         let rate_lock_selector = lock_selector(b"RATE_LOCK");
         let selectors: vector<vector<u8>> = vector[rate_lock_selector];
-        let lock_wait_times = vector[1000];
+        let lock_wait_times = vector[1];
 
         // Initialize the market config and marketplace
         market::initialize(
@@ -1833,7 +1832,7 @@ module oyster_market::oyster_market_tests {
             &clock,
             scenario.ctx()
         );
-        let time = clock::timestamp_ms(&clock);
+        let time = clock::timestamp_ms(&clock) / 1000;
 
         let job_id = 0;
         let new_metadata = string::utf8(b"https://new.provider.example.com");

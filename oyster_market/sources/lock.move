@@ -12,7 +12,7 @@ module oyster_market::lock {
     /// ------------------------------------------------------------------------
 
     public struct Lock has drop, store, copy {
-        unlock_time: u64, // milliseconds since Unix epoch
+        unlock_time: u64, // seconds since Unix epoch
         i_value: u256,
     }
 
@@ -22,7 +22,7 @@ module oyster_market::lock {
         version: u64,
         /// lock_id (keccak256(selector || key)) -> Lock
         locks: Table<vector<u8>, Lock>,
-        /// selector -> wait time in milliseconds
+        /// selector -> wait time in seconds
         lock_wait_times: Table<vector<u8>, u64>,
     }
 
@@ -88,9 +88,9 @@ module oyster_market::lock {
         hash::keccak256(&bytes)
     }
 
-    /// Returns current timestamp in ms from the system Clock.
-    fun now_ms(clock: &Clock): u64 {
-        clock::timestamp_ms(clock)
+    /// Returns current timestamp in seconds from the system Clock.
+    fun now(clock: &Clock): u64 {
+        clock::timestamp_ms(clock) / 1000
     }
 
     fun assert_version(obj_version: u64) {
@@ -100,7 +100,7 @@ module oyster_market::lock {
     /// ------------------------------------------------------------------------
     /// Read ("view")
     /// ------------------------------------------------------------------------
-    public fun lock_wait_time_ms(
+    public fun lock_wait_time(
         lock_data: &LockData,
         selector: vector<u8>
     ): u64 {
@@ -119,7 +119,7 @@ module oyster_market::lock {
         let id = lock_id(selector, key);
         if (!table::contains(&lock_data.locks, id)) { return LockStatus::None };
         let unlock_time = table::borrow(&lock_data.locks, id).unlock_time;
-        let now = now_ms(clock);
+        let now = now(clock);
         if (unlock_time <= now) LockStatus::Unlocked else LockStatus::Locked
     }
 
@@ -139,9 +139,9 @@ module oyster_market::lock {
         let status = lock_status(lock_data, &selector, &key, clock);
         assert!(status == LockStatus::None, E_LOCK_SHOULD_BE_NONE);
 
-        let duration = lock_wait_time_ms(lock_data, selector);
+        let duration = lock_wait_time(lock_data, selector);
         let id = lock_id(&selector, &key);
-        let unlock_time = now_ms(clock) + duration;
+        let unlock_time = now(clock) + duration;
         let l = Lock { unlock_time: unlock_time, i_value }; 
         table::add(&mut lock_data.locks, id, l);
         event::emit(LockCreated { selector, key, i_value, unlock_time: unlock_time });
@@ -199,36 +199,36 @@ module oyster_market::lock {
     fun update_lock_wait_time(
         lock_data: &mut LockData,
         selector: vector<u8>,
-        new_wait_ms: u64
+        new_wait: u64
     ) {
         let prev = if (table::contains(&lock_data.lock_wait_times, selector)) {
             let prev_wait_time = *table::borrow(&lock_data.lock_wait_times, selector);
-            *table::borrow_mut(&mut lock_data.lock_wait_times, selector) = new_wait_ms;
+            *table::borrow_mut(&mut lock_data.lock_wait_times, selector) = new_wait;
             prev_wait_time
         } else { 
-            table::add(&mut lock_data.lock_wait_times, selector, new_wait_ms);
+            table::add(&mut lock_data.lock_wait_times, selector, new_wait);
             0 
         };
 
         event::emit(LockWaitTimeUpdated {
             selector,
             prev_lock_time: prev,
-            updated_lock_time: new_wait_ms
+            updated_lock_time: new_wait
         });
     }
 
     public(package) fun update_lock_wait_times(
         lock_data: &mut LockData,
         selectors: vector<vector<u8>>,
-        new_waits_ms: vector<u64>
+        new_waits: vector<u64>
     ) {
         assert_version(lock_data.version);
         let len = vector::length(&selectors);
-        assert!(len == vector::length(&new_waits_ms), E_LOCK_LENGTH_MISMATCH);
+        assert!(len == vector::length(&new_waits), E_LOCK_LENGTH_MISMATCH);
         let mut i = 0;
         while (i < len) {
             let selector = *vector::borrow(&selectors, i);
-            let wait_time = *vector::borrow(&new_waits_ms, i);
+            let wait_time = *vector::borrow(&new_waits, i);
             update_lock_wait_time(lock_data, selector, wait_time);
             i = i + 1;
         }
