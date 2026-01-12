@@ -33,6 +33,7 @@ module oyster_market::market {
     const E_ALREADY_INITIALIZED: u64 = 113;
     const E_WRONG_VERSION: u64 = 114;
     const E_NOT_UPGRADE: u64 = 115;
+    const E_JOB_NOT_FOUND: u64 = 116;
 
     // --- Constants ---
     const EXTRA_DECIMALS: u8 = 12; // 10^12
@@ -226,6 +227,7 @@ module oyster_market::market {
     public fun provider_update_cp(config: &mut MarketConfig, new_cp: String, ctx: &TxContext) {
         assert_version(config.version);
         let provider_addr = tx_context::sender(ctx);
+        assert!(table::contains(&config.providers, provider_addr), E_PROVIDER_NOT_FOUND);
         assert!(string::length(&new_cp) > 0, E_INVALID_PROVIDER_CP);
         let provider = table::borrow_mut(&mut config.providers, provider_addr);
         provider.cp = new_cp;
@@ -419,6 +421,7 @@ module oyster_market::market {
                 clock,
                 ctx
             );
+            return
         };
 
         // non-0 rate jobs can be closed after proper notice
@@ -443,6 +446,7 @@ module oyster_market::market {
         ctx: &mut TxContext,
     ) {
         assert_version(marketplace.version);
+        assert!(table::contains(&marketplace.jobs, job_id), E_JOB_NOT_FOUND);
         let job = table::borrow_mut(&mut marketplace.jobs, job_id);
 
         let amount = deposit(job, payment_to_deposit);

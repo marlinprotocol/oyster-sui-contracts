@@ -1,6 +1,8 @@
 [package]
 name = "oyster_market"
 edition = "2024.beta" # edition = "legacy" to use legacy (pre-2024) Move
+# published-at is required for upgrades - specifies the original package ID
+published-at = "0x2238fa1b65c9455e6f682b760a7cb04737a1f47c3ecfab2c903981d8d5080218"
 
 [dependencies]
 # For remote import, use the `{ git = "...", subdir = "...", rev = "..." }`.

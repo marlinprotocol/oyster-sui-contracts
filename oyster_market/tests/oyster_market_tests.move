@@ -1876,6 +1876,185 @@ module oyster_market::oyster_market_tests {
     }
 
     // ------------------------X---------------------------X--------------------------------X------------------------
+    // REGRESSION TESTS - Ensure audit fixes are not removed
+    // ------------------------X---------------------------X--------------------------------X------------------------
+
+    /// Regression test for Fix: job_close must return after zero-rate path
+    /// This test ensures zero-rate jobs can be closed without initiating a lock
+    /// If the `return` statement is removed, this would fail trying to unlock a non-existent lock
+    #[test]
+    fun test_regression_job_close_zero_rate_without_lock() {
+        let admin = @0x123;
+        let provider = @0x456;
+        let mut scenario = test_scenario::begin(admin);
+
+        market::test_market_init(scenario.ctx());
+        lock::test_lock_init(scenario.ctx());
+        scenario.next_tx(admin);
+
+        let mut config = scenario.take_shared<MarketConfig>();
+        let mut lock_data = scenario.take_shared<LockData>();
+        let rate_lock_selector = lock_selector(b"RATE_LOCK");
+        let selectors: vector<vector<u8>> = vector[rate_lock_selector];
+        let lock_wait_times = vector[1];
+
+        market::initialize(
+            &mut config,
+            &mut lock_data,
+            admin,
+            selectors,
+            lock_wait_times
+        );
+
+        scenario.next_tx(admin);
+        let mut marketplace = scenario.take_shared<Marketplace>();
+
+        scenario.next_tx(provider);
+        let cp = string::utf8(b"https://provider.example.com");
+        market::provider_add(&mut config, cp, scenario.ctx());
+
+        scenario.next_tx(admin);
+
+        // Open a job with ZERO rate - this is the key difference
+        let metadata = string::utf8(b"Zero rate job");
+        let rate = 0; // ZERO RATE - should be closable without lock
+
+        let usdc_amount = usdc(1000);
+        let usdc_coin = coin::mint_for_testing<USDC>(usdc_amount, scenario.ctx());
+        scenario.next_tx(admin);
+
+        let clock = clock::create_for_testing(scenario.ctx());
+
+        market::job_open(
+            &mut marketplace,
+            metadata,
+            provider,
+            rate,
+            usdc_coin,
+            &clock,
+            scenario.ctx()
+        );
+
+        let job_id = 0;
+        scenario.next_tx(admin);
+
+        // Close the zero-rate job WITHOUT initiating any lock
+        // This should succeed because zero-rate jobs bypass the lock mechanism
+        market::job_close(
+            &mut marketplace,
+            &mut lock_data,
+            job_id,
+            &clock,
+            scenario.ctx()
+        );
+
+        scenario.next_tx(admin);
+        {
+            // Verify job is closed
+            let job_exists = market::job_exists(&marketplace, job_id);
+            assert!(!job_exists);
+
+            // Owner should get back all funds (no usage since rate=0)
+            let admin_usdc_bal = scenario.take_from_address<Coin<USDC>>(admin);
+            assert!(admin_usdc_bal.value() == usdc_amount);
+            test_scenario::return_to_address(admin, admin_usdc_bal);
+        };
+
+        test_scenario::return_shared(lock_data);
+        test_scenario::return_shared(config);
+        test_scenario::return_shared(marketplace);
+        clock::destroy_for_testing(clock);
+        scenario.end();
+    }
+
+    /// Regression test for Fix: job_deposit must check job existence
+    /// This test ensures depositing to a non-existent job fails with E_JOB_NOT_FOUND
+    #[test, expected_failure(abort_code = market::E_JOB_NOT_FOUND)]
+    fun test_regression_job_deposit_nonexistent_job() {
+        let admin = @0x123;
+        let mut scenario = test_scenario::begin(admin);
+
+        market::test_market_init(scenario.ctx());
+        lock::test_lock_init(scenario.ctx());
+        scenario.next_tx(admin);
+
+        let mut config = scenario.take_shared<MarketConfig>();
+        let mut lock_data = scenario.take_shared<LockData>();
+        let rate_lock_selector = lock_selector(b"RATE_LOCK");
+        let selectors: vector<vector<u8>> = vector[rate_lock_selector];
+        let lock_wait_times = vector[1];
+
+        market::initialize(
+            &mut config,
+            &mut lock_data,
+            admin,
+            selectors,
+            lock_wait_times
+        );
+
+        scenario.next_tx(admin);
+        let mut marketplace = scenario.take_shared<Marketplace>();
+
+        // Do NOT open any job - marketplace.job_index is still 0
+
+        let usdc_coin = coin::mint_for_testing<USDC>(usdc(100), scenario.ctx());
+        scenario.next_tx(admin);
+
+        // Try to deposit to non-existent job_id = 999
+        // This should fail with E_JOB_NOT_FOUND
+        market::job_deposit(
+            &mut marketplace,
+            999, // Non-existent job
+            usdc_coin,
+            scenario.ctx()
+        );
+
+        test_scenario::return_shared(lock_data);
+        test_scenario::return_shared(config);
+        test_scenario::return_shared(marketplace);
+        scenario.end();
+    }
+
+    /// Regression test for Fix: provider_update_cp must check provider existence
+    /// This test ensures updating CP for a non-existent provider fails with E_PROVIDER_NOT_FOUND
+    #[test, expected_failure(abort_code = market::E_PROVIDER_NOT_FOUND)]
+    fun test_regression_provider_update_cp_nonexistent() {
+        let admin = @0x123;
+        let mut scenario = test_scenario::begin(admin);
+
+        market::test_market_init(scenario.ctx());
+        lock::test_lock_init(scenario.ctx());
+        scenario.next_tx(admin);
+
+        let mut config = scenario.take_shared<MarketConfig>();
+        let mut lock_data = scenario.take_shared<LockData>();
+        let rate_lock_selector = lock_selector(b"RATE_LOCK");
+        let selectors: vector<vector<u8>> = vector[rate_lock_selector];
+        let lock_wait_times = vector[1];
+
+        market::initialize(
+            &mut config,
+            &mut lock_data,
+            admin,
+            selectors,
+            lock_wait_times
+        );
+
+        scenario.next_tx(admin);
+
+        // Do NOT register as a provider - admin is NOT in providers table
+
+        // Try to update CP without being a provider
+        // This should fail with E_PROVIDER_NOT_FOUND
+        let new_cp = string::utf8(b"https://fake-provider.example.com");
+        market::provider_update_cp(&mut config, new_cp, scenario.ctx());
+
+        test_scenario::return_shared(lock_data);
+        test_scenario::return_shared(config);
+        scenario.end();
+    }
+
+    // ------------------------X---------------------------X--------------------------------X------------------------
 
     /// Lock status enum like Solidity. 0=None, 1=Unlocked, 2=Locked
     public enum LockStatus has drop { 
